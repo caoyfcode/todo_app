@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Todo</string>
+    <string name="add_todo">添加待办</string>
+    <string name="search">查找待办</string>
+    <string name="all_groups">所有组</string>
+    <string name="no_todo">无待办</string>
 </resources>
