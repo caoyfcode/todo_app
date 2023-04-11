@@ -13,7 +13,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -24,7 +24,7 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
-    tertiary = Pink40
+    tertiary = Pink40,
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -52,11 +52,15 @@ fun TodoTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+    // 修改状态栏颜色
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            (view.context as Activity).window.statusBarColor = colorScheme.primary.toArgb()
-            ViewCompat.getWindowInsetsController(view)?.isAppearanceLightStatusBars = darkTheme
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.background.toArgb() // 设置状态栏为背景色
+            // 因为状态栏颜色为背景色, 则状态栏前景应该在黑暗模式下亮, 非黑暗模式下暗
+            // isAppearanceLightStatusBars 为 true 时前景将为黑色, false 时前景为默认(白色), 故为 !darkTheme
+            WindowInsetsControllerCompat(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
