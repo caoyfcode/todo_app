@@ -1,9 +1,14 @@
 <resources>
+    // App 名
     <string name="app_name">Todo</string>
+    // 顶部 AppBar 按钮
     <string name="add_todo">添加待办</string>
     <string name="search">查找待办</string>
+    <string name="all_groups">所有待办组</string>
+    // 左部导航栏
+    <string name="add_group">添加待办组</string>
+    // 内容
     <string name="unchecked_todo">未完成的待办</string>
     <string name="checked_todo">已经完成的待办</string>
-    <string name="all_groups">所有组</string>
     <string name="no_todo">无待办</string>
 </resources>
