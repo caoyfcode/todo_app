@@ -1,16 +1,21 @@
 package com.github.caoyfcode.todo.ui
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.github.caoyfcode.todo.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun Navigation(
     groups: List<Pair<String, String>>, // // (emoji icon, name)
@@ -26,31 +31,52 @@ fun Navigation(
     onGroupSelected: (selected: String) -> Unit,
     content: @Composable (openNavigation: () -> Unit) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(
-                modifier = Modifier.fillMaxWidth(0.66f)
-            ) {
-                NavigationContent(
-                    groups = groups,
-                    selectedGroup = selectedGroup,
-                    onGroupSelected = {
-                        scope.launch {
-                            drawerState.close()
+    val windowWidthSizeClass = calculateWindowSizeClass(activity = LocalView.current.context as Activity).widthSizeClass
+    if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
+        val scope = rememberCoroutineScope()
+        val drawerState = rememberDrawerState(DrawerValue.Closed)
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                ModalDrawerSheet(
+                    modifier = Modifier.fillMaxWidth(0.66f),
+                    drawerContainerColor = MaterialTheme.colorScheme.secondary,
+                ) {
+                    NavigationContent(
+                        groups = groups,
+                        selectedGroup = selectedGroup,
+                        onGroupSelected = {
+                            scope.launch {
+                                drawerState.close()
+                            }
+                            onGroupSelected(it)
                         }
-                        onGroupSelected(it)
-                    }
-                )
+                    )
+                }
+            }
+        ) {
+            content {
+                scope.launch {
+                    drawerState.open()
+                }
             }
         }
-    ) {
-        content {
-            scope.launch {
-                drawerState.open()
+    } else {
+        PermanentNavigationDrawer(
+            drawerContent = {
+                PermanentDrawerSheet (
+                    modifier = Modifier.fillMaxWidth(0.3f),
+                    drawerContainerColor = MaterialTheme.colorScheme.secondary,
+                ) {
+                    NavigationContent(
+                        groups = groups,
+                        selectedGroup = selectedGroup,
+                        onGroupSelected = onGroupSelected
+                    )
+                }
             }
+        ) {
+            content { } // 默认就是打开的, 故传入的函数啥也不做
         }
     }
 }
@@ -93,7 +119,7 @@ fun NavigationContent(
                     .padding(NavigationDrawerItemDefaults.ItemPadding),
                 colors = NavigationDrawerItemDefaults.colors(
                     selectedContainerColor = MaterialTheme.colorScheme.tertiary,
-                    unselectedContainerColor = MaterialTheme.colorScheme.background,
+                    unselectedContainerColor = MaterialTheme.colorScheme.secondary,
                 )
             )
         }

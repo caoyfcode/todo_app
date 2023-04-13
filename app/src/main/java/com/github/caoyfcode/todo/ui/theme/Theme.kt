@@ -21,17 +21,17 @@ private val defaultLightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme(
     primary = defaultDarkColorScheme.background,
     onPrimary = defaultDarkColorScheme.onBackground,
-    secondary = defaultDarkColorScheme.background,
+    secondary = DarkSecondary,
     onSecondary = defaultDarkColorScheme.onBackground,
-    tertiary = DarkGroupSelectedColor,
+    tertiary = defaultDarkColorScheme.background,
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = defaultLightColorScheme.background,
     onPrimary = defaultLightColorScheme.onBackground,
-    secondary = defaultLightColorScheme.background,
+    secondary = LightSecondary,
     onSecondary = defaultLightColorScheme.onBackground,
-    tertiary = LightGroupSelectedColor,
+    tertiary = defaultLightColorScheme.background,
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
