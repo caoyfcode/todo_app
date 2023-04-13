@@ -17,31 +17,39 @@ import com.github.caoyfcode.todo.R
 
 @Composable
 fun TodoItem(message: String, checked: Boolean) {
+    val contentColor = if (checked) {
+        MaterialTheme.colorScheme.secondary
+    } else {
+        MaterialTheme.colorScheme.onBackground
+    }
+    val painter = if (checked) {
+        painterResource(id = R.drawable.check)
+    } else {
+        painterResource(id = R.drawable.bookmark)
+    }
+    val description = if (checked) {
+        stringResource(id = R.string.checked_todo)
+    } else {
+        stringResource(id = R.string.unchecked_todo)
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth(),
         shape = RoundedCornerShape(20),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.inverseSurface)
+        border = BorderStroke(2.dp, contentColor),
+        color = MaterialTheme.colorScheme.background,
+        contentColor = contentColor,
     ) {
         Row(
             modifier = Modifier.padding(10.dp), // 10dp 水平: 与子项间隔相同, 竖直: 保持最小高度为 20dp + content size
             horizontalArrangement = Arrangement.spacedBy(10.dp), // 子项水平相隔 10dp
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (checked) {
-                IconButton(onClick = { /*TODO*/ }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.check),
-                        contentDescription = stringResource(id = R.string.checked_todo)
-                    )
-                }
-            } else {
-                IconButton(onClick = { /*TODO*/ }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.bookmark),
-                        contentDescription = stringResource(id = R.string.unchecked_todo)
-                    )
-                }
+            IconButton(onClick = { /*TODO*/ }) {
+                Icon(
+                    painter = painter,
+                    contentDescription = description
+                )
             }
             Text(text = message)
         }

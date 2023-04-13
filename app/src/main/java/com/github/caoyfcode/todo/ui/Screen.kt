@@ -117,7 +117,7 @@ fun Content(paddingValues: PaddingValues) {
                     TodoItem(message = it, false)
                 }
                 item {
-                    Divider(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Divider(color = MaterialTheme.colorScheme.secondary)
                 }
                 items(checked_messages) {
                     TodoItem(message = it, true)
