@@ -1,5 +1,6 @@
 package com.github.caoyfcode.todo.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -114,6 +115,7 @@ fun TopBar(
  * @param checkedTodos a list of (uid, group emoji, subject)
  * @param uncheckedTodos same
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Content(
     paddingValues: PaddingValues,
@@ -143,8 +145,9 @@ fun Content(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp), // 没项相隔 20dp
             ) {
-                items(uncheckedTodos) {
+                items(uncheckedTodos, key = { it.first }) {
                     TodoItem(
+                        modifier = Modifier.animateItemPlacement(),
                         emoji = it.second,
                         subject = it.third,
                         checked = false,
@@ -156,8 +159,9 @@ fun Content(
                 item {
                     Divider(color = MaterialTheme.colorScheme.secondary)
                 }
-                items(checkedTodos) {
+                items(checkedTodos, key = { it.first }) {
                     TodoItem(
+                        modifier = Modifier.animateItemPlacement(),
                         emoji = it.second,
                         subject = it.third,
                         checked = true,

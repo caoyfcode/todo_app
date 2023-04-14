@@ -10,10 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.github.caoyfcode.todo.R
 
 @Composable
 fun TodoItem(
+    modifier: Modifier = Modifier,
     emoji: String,
     subject: String,
     checked: Boolean,
@@ -25,8 +29,7 @@ fun TodoItem(
         MaterialTheme.colorScheme.onBackground
     }
     Surface(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20),
         border = BorderStroke(2.dp, contentColor),
         color = MaterialTheme.colorScheme.background,
@@ -38,7 +41,14 @@ fun TodoItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onToggleChecked) {
-                Text(text = emoji)
+                if (!checked) {
+                    Text(text = emoji)
+                } else {
+                    Icon(
+                        painter = painterResource(id = R.drawable.check), 
+                        contentDescription = stringResource(id = R.string.checked_todo)
+                    )
+                }
             }
             Text(text = subject)
         }
