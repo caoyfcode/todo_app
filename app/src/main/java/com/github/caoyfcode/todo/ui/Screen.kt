@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -20,39 +22,39 @@ import com.github.caoyfcode.todo.model.TodoViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Screen(viewModel: TodoViewModel) {
-    val groups = viewModel.groups.observeAsState(viewModel.groups.value!!)
-    val todos = viewModel.todos.observeAsState(viewModel.todos.value!!)
+    val groups by viewModel.groups.observeAsState(viewModel.groups.value!!)
+    val todos by viewModel.todos.observeAsState(viewModel.todos.value!!)
 
-    val selectedGroup = rememberSaveable { mutableStateOf(-1) }
+    var selectedGroup by rememberSaveable { mutableStateOf(-1) }
 
-    val selectedName = if (selectedGroup.value < 0) {
+    val selectedName = if (selectedGroup < 0) {
         stringResource(id = R.string.all_todo_group_name)
     } else {
-        groups.value.find {
-            it.uid == selectedGroup.value
+        groups.find {
+            it.uid == selectedGroup
         }!!.name
     }
 
-    var uncheckedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
-    var checkedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
-    for (todo in todos.value) {
-        if (selectedGroup.value >= 0 && selectedGroup.value != todo.groupUid) {
+    val uncheckedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
+    val checkedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
+    for (todo in todos) {
+        if (selectedGroup >= 0 && selectedGroup != todo.groupUid) {
             continue
         }
-        val groupIcon = groups.value.find {
+        val groupIcon = groups.find {
             it.uid == todo.groupUid
         }!!.icon
         if (todo.checked) {
-            checkedTodos.add(Triple(todo.uid, groupIcon, todo.subject))
+            checkedTodos += Triple(todo.uid, groupIcon, todo.subject)
         } else {
-            uncheckedTodos.add(Triple(todo.uid, groupIcon, todo.subject))
+            uncheckedTodos += Triple(todo.uid, groupIcon, todo.subject)
         }
     }
     Navigation(
-        groups = groups.value,
-        selectedGroup = selectedGroup.value,
+        groups = groups,
+        selectedGroup = selectedGroup,
         onGroupSelected = { selected ->
-            selectedGroup.value = selected
+            selectedGroup = selected
         }
     ) { openNavigation ->
         Scaffold(
