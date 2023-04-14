@@ -7,7 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -19,10 +19,10 @@ import com.github.caoyfcode.todo.model.TodoViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Screen(viewModel: TodoViewModel) {
-    val groups = viewModel.groups.observeAsState(listOf())
-    val todos = viewModel.todos.observeAsState(listOf())
+    val groups = viewModel.groups.observeAsState(viewModel.groups.value!!)
+    val todos = viewModel.todos.observeAsState(viewModel.todos.value!!)
 
-    val selectedGroup = remember { mutableStateOf(-1) }
+    val selectedGroup = rememberSaveable { mutableStateOf(-1) }
 
     val selectedName = if (selectedGroup.value < 0) {
         stringResource(id = R.string.all_todo_group_name)
