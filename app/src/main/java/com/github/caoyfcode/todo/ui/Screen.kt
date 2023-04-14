@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -13,20 +14,41 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.caoyfcode.todo.R
+import com.github.caoyfcode.todo.model.TodoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Screen() {
-    val groups = listOf(
-        Pair("\uD83D\uDD18", "所有待办"),
-        Pair("\uD83D\uDCBC", "工作"),
-        Pair("\uD83D\uDCD6", "学习"),
-        Pair("😊", "娱乐"),
-        Pair("\uD83E\uDDFA", "杂务")
-    )
-    val selectedGroup = remember { mutableStateOf(groups[0].second) }
+fun Screen(viewModel: TodoViewModel) {
+    val groups = viewModel.groups.observeAsState(listOf())
+    val todos = viewModel.todos.observeAsState(listOf())
+
+    val selectedGroup = remember { mutableStateOf(-1) }
+
+    val selectedName = if (selectedGroup.value < 0) {
+        stringResource(id = R.string.all_todo_group_name)
+    } else {
+        groups.value.find {
+            it.uid == selectedGroup.value
+        }!!.name
+    }
+
+    var uncheckedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
+    var checkedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
+    for (todo in todos.value) {
+        if (selectedGroup.value >= 0 && selectedGroup.value != todo.groupUid) {
+            continue
+        }
+        val groupIcon = groups.value.find {
+            it.uid == todo.groupUid
+        }!!.icon
+        if (todo.checked) {
+            checkedTodos.add(Triple(todo.uid, groupIcon, todo.subject))
+        } else {
+            uncheckedTodos.add(Triple(todo.uid, groupIcon, todo.subject))
+        }
+    }
     Navigation(
-        groups = groups,
+        groups = groups.value,
         selectedGroup = selectedGroup.value,
         onGroupSelected = { selected ->
             selectedGroup.value = selected
@@ -36,12 +58,19 @@ fun Screen() {
             modifier = Modifier.padding(10.dp),
             topBar = {
                 TopBar(
-                    group = selectedGroup.value,
+                    group = selectedName,
                     onNavigationCLick = openNavigation,
                 )
             },
         ) { paddingValues ->
-            Content(paddingValues = paddingValues)
+            Content(
+                paddingValues = paddingValues,
+                checkedTodos = checkedTodos,
+                uncheckedTodos = uncheckedTodos,
+                onToggleCheckedTodo = { uid ->
+                    viewModel.toggleCheckedTodo(uid)
+                }
+            )
         }
     }
 }
@@ -79,25 +108,26 @@ fun TopBar(
     )
 }
 
+/**
+ * 主要内容
+ * @param paddingValues 由 Scaffold 获得
+ * @param checkedTodos a list of (uid, group emoji, subject)
+ * @param uncheckedTodos same
+ */
 @Composable
-fun Content(paddingValues: PaddingValues) {
-    val unchecked_messages: List<String> = listOf(
-        "Sleep",
-        "Go to School",
-        "Coding",
-    )
-    val checked_messages: List<String> = listOf(
-        "吃饭",
-        "睡觉",
-        "打游戏",
-    )
+fun Content(
+    paddingValues: PaddingValues,
+    checkedTodos: List<Triple<Int, String, String>>, // uid, group emoji, subject
+    uncheckedTodos: List<Triple<Int, String, String>>, // uid, group emoji, subject
+    onToggleCheckedTodo: (Int) -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues),
         contentAlignment = Alignment.TopCenter
     ) {
-        if (unchecked_messages.isEmpty() && checked_messages.isEmpty()) {
+        if (uncheckedTodos.isEmpty() && checkedTodos.isEmpty()) {
             Box (
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -113,14 +143,28 @@ fun Content(paddingValues: PaddingValues) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp), // 没项相隔 20dp
             ) {
-                items(unchecked_messages) {
-                    TodoItem(message = it, false)
+                items(uncheckedTodos) {
+                    TodoItem(
+                        emoji = it.second,
+                        subject = it.third,
+                        checked = false,
+                        onToggleChecked = {
+                            onToggleCheckedTodo(it.first)
+                        }
+                    )
                 }
                 item {
                     Divider(color = MaterialTheme.colorScheme.secondary)
                 }
-                items(checked_messages) {
-                    TodoItem(message = it, true)
+                items(checkedTodos) {
+                    TodoItem(
+                        emoji = it.second,
+                        subject = it.third,
+                        checked = true,
+                        onToggleChecked = {
+                            onToggleCheckedTodo(it.first)
+                        }
+                    )
                 }
             }
         }

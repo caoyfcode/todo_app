@@ -22,13 +22,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.github.caoyfcode.todo.R
+import com.github.caoyfcode.todo.entity.Group
 
+/**
+ * 侧边栏组件
+ * @param groups a list of (emoji icon, name)
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun Navigation(
-    groups: List<Pair<String, String>>, // // (emoji icon, name)
-    selectedGroup: String,
-    onGroupSelected: (selected: String) -> Unit,
+    groups: List<Group>,
+    selectedGroup: Int,
+    onGroupSelected: (selected: Int) -> Unit,
     content: @Composable (openNavigation: () -> Unit) -> Unit
 ) {
     val windowWidthSizeClass = calculateWindowSizeClass(activity = LocalView.current.context as Activity).widthSizeClass
@@ -84,9 +89,9 @@ fun Navigation(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationContent(
-    groups: List<Pair<String, String>>, // (emoji icon, name)
-    selectedGroup: String,
-    onGroupSelected: (String) -> Unit,
+    groups: List<Group>, // (emoji icon, name)
+    selectedGroup: Int, // uid of group, -1 if all todos
+    onGroupSelected: (Int) -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -102,18 +107,37 @@ fun NavigationContent(
             contentDescription = null,
         )
     }
+    // all item group
+    NavigationDrawerItem(
+        icon = {
+               Text(text = stringResource(id = R.string.all_todo_group_icon))
+        },
+        label = { 
+                Text(text = stringResource(id = R.string.all_todo_group_name))
+        }, 
+        selected = selectedGroup < 0,
+        onClick = {
+            onGroupSelected(-1)
+        },
+        modifier = Modifier
+            .padding(NavigationDrawerItemDefaults.ItemPadding),
+        colors = NavigationDrawerItemDefaults.colors(
+            selectedContainerColor = MaterialTheme.colorScheme.tertiary,
+            unselectedContainerColor = MaterialTheme.colorScheme.secondary,
+        )
+    )
     LazyColumn {
         items(groups) {
             NavigationDrawerItem(
                 icon = {
-                    Text(text = it.first)
+                    Text(text = it.icon)
                 },
                 label = {
-                    Text(text = it.second)
+                    Text(text = it.name)
                 },
-                selected = it.second == selectedGroup,
+                selected = it.uid == selectedGroup,
                 onClick = {
-                    onGroupSelected(it.second)
+                    onGroupSelected(it.uid)
                 },
                 modifier = Modifier
                     .padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -146,13 +170,12 @@ fun NavigationContent(
 @Composable
 fun NavigationPreview() {
     val groups = listOf(
-        Pair("\uD83D\uDD18", "所有待办"),
-        Pair("\uD83D\uDCBC", "工作"),
-        Pair("\uD83D\uDCD6", "学习"),
-        Pair("😊", "娱乐"),
-        Pair("\uD83E\uDDFA", "杂务")
+        Group(0, "\uD83D\uDCBC", "工作"),
+        Group(1, "\uD83D\uDCD6", "学习"),
+        Group(2, "😊", "娱乐"),
+        Group(3, "\uD83E\uDDFA", "杂务")
     )
-    val selectedGroup = remember { mutableStateOf(groups[0].second) }
+    val selectedGroup = remember { mutableStateOf(-1) }
     com.github.caoyfcode.todo.ui.theme.TodoTheme {
         Navigation(
             groups = groups,
