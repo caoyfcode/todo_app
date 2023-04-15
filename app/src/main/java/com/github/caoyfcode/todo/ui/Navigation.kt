@@ -42,6 +42,7 @@ fun Navigation(
         val drawerState = rememberDrawerState(DrawerValue.Closed)
         ModalNavigationDrawer(
             drawerState = drawerState,
+            gesturesEnabled = drawerState.isOpen, // 展开时需要点击空白处来关闭, 关闭时禁用防止与列表项右滑冲突
             drawerContent = {
                 ModalDrawerSheet(
                     modifier = Modifier.fillMaxWidth(0.66f),
