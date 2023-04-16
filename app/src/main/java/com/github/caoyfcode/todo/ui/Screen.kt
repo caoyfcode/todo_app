@@ -158,8 +158,8 @@ fun Content(
                         }
                     )
                 }
-                item {
-                    Divider(color = MaterialTheme.colorScheme.secondary)
+                item(key = -1) {
+                    Divider(color = MaterialTheme.colorScheme.secondary, modifier = Modifier.animateItemPlacement())
                 }
                 items(checkedTodos, key = { it.first }) {
                     TodoItem(
