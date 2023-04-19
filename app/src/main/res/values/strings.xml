@@ -14,4 +14,6 @@
     <string name="checked_todo">已经完成的待办</string>
     <string name="no_todo">无待办</string>
     <string name="toggle_folding">展开/收起待办内容</string>
+    <string name="edit">编辑待办</string>
+    <string name="delete">删除待办</string>
 </resources>

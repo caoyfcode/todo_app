@@ -70,6 +70,9 @@ fun Screen(viewModel: TodoViewModel) {
                 uncheckedTodos = uncheckedTodos,
                 onToggleCheckedTodo = { uid ->
                     viewModel.toggleCheckedTodo(uid)
+                },
+                onDeleteTodo = {
+                    viewModel.deleteTodo(it)
                 }
             )
         }
@@ -122,6 +125,7 @@ fun Content(
     checkedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
     uncheckedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
     onToggleCheckedTodo: (Int) -> Unit,
+    onDeleteTodo: (Int) -> Unit,
 ) {
     // 经观察, animateItemPlacement 的原理为重组时找到原来相同 key 的位置, 放置在此处，之后向目标移动
     // 因而，可以仅让 toggle 后的 item 进行 scale in, 其余不 scale in
@@ -161,7 +165,9 @@ fun Content(
                         onToggleChecked = {
                             shouldScaleInIds.add(it.second.uid)
                             onToggleCheckedTodo(it.second.uid)
-                        }
+                        },
+                        onEditClicked = {},
+                        onDeleteClicked = { onDeleteTodo(it.second.uid) },
                     )
                 }
                 item(key = -1) {
@@ -178,7 +184,9 @@ fun Content(
                         onToggleChecked = {
                             shouldScaleInIds.add(it.second.uid)
                             onToggleCheckedTodo(it.second.uid)
-                        }
+                        },
+                        onEditClicked = {},
+                        onDeleteClicked = { onDeleteTodo(it.second.uid) },
                     )
                 }
             }

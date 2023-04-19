@@ -48,4 +48,32 @@ class TodoViewModel: ViewModel() {
             }
         }
     }
+
+    fun addTodo(todo: Todo) {
+        var biggestUid = -1
+        _todos.value?.map {
+            if (it.uid > biggestUid) {
+                biggestUid = it.uid
+            }
+        }
+        _todos.value = _todos.value?.plus(
+            todo.copy(
+                uid = biggestUid + 1
+            )
+        )
+    }
+
+    fun deleteTodo(uid: Int) {
+        _todos.value = _todos.value?.filter { it.uid != uid }
+    }
+
+    fun changeTodo(changed: Todo) {
+        _todos.value = _todos.value?.map {
+            if (it.uid == changed.uid) {
+                changed
+            } else {
+                it
+            }
+        }
+    }
 }
