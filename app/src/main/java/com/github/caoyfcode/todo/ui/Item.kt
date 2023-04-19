@@ -27,7 +27,7 @@ import com.github.caoyfcode.todo.R
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun TodoItem(
     modifier: Modifier = Modifier,
@@ -35,13 +35,14 @@ fun TodoItem(
     subject: String,
     content: String,
     checked: Boolean,
+    scaleIn: Boolean = false,
     onToggleChecked: () -> Unit,
 ) {
     var reverseChecked by remember { mutableStateOf(false) } // 是否显示为另一种形态
     val shownChecked = if (reverseChecked) !checked else checked
-    var shown by remember { mutableStateOf(false) } // 是否可见
-    LaunchedEffect(Unit) {
-        if (!shown) {
+    var shown by remember { mutableStateOf(!scaleIn) } // 是否可见
+    if (!shown) { // 若 scaleIn, 则初始不可见, 第一次组合之后变为可见
+        LaunchedEffect(Unit) {
             shown = true
         }
     }
@@ -232,7 +233,8 @@ fun ItemPreview() {
             subject = "subject",
             content = "content content",
             checked = checked,
-            onToggleChecked = { checked = ! checked }
+            scaleIn = false,
+            onToggleChecked = { checked = ! checked },
         )
     }
 }

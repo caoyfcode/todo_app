@@ -5,12 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -126,6 +123,11 @@ fun Content(
     uncheckedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
     onToggleCheckedTodo: (Int) -> Unit,
 ) {
+    // 经观察, animateItemPlacement 的原理为重组时找到原来相同 key 的位置, 放置在此处，之后向目标移动
+    // 因而，可以仅让 toggle 后的 item 进行 scale in, 其余不 scale in
+    val shouldScaleInIds = remember {
+        mutableSetOf<Int>()
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -155,7 +157,9 @@ fun Content(
                         subject = it.second.subject,
                         content = it.second.content,
                         checked = false,
+                        scaleIn = shouldScaleInIds.containsAndRemove(it.second.uid),
                         onToggleChecked = {
+                            shouldScaleInIds.add(it.second.uid)
                             onToggleCheckedTodo(it.second.uid)
                         }
                     )
@@ -170,7 +174,9 @@ fun Content(
                         subject = it.second.subject,
                         content = it.second.content,
                         checked = true,
+                        scaleIn = shouldScaleInIds.containsAndRemove(it.second.uid),
                         onToggleChecked = {
+                            shouldScaleInIds.add(it.second.uid)
                             onToggleCheckedTodo(it.second.uid)
                         }
                     )
@@ -178,4 +184,10 @@ fun Content(
             }
         }
     }
+}
+
+fun <T> MutableSet<T>.containsAndRemove(element: T): Boolean {
+    val contains = this.contains(element)
+    this.remove(element)
+    return contains
 }
