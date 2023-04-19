@@ -2,6 +2,7 @@ package com.github.caoyfcode.todo.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.BorderStroke
@@ -15,21 +16,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.caoyfcode.todo.R
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TodoItem(
     modifier: Modifier = Modifier,
     emoji: String,
     subject: String,
+    content: String,
     checked: Boolean,
     onToggleChecked: () -> Unit,
 ) {
@@ -62,23 +66,94 @@ fun TodoItem(
             color = MaterialTheme.colorScheme.background,
             contentColor = contentColor,
         ) {
+            TodoItemContent(
+                emoji = emoji,
+                subject = subject,
+                content = content,
+                checked = shownChecked,
+                onToggleChecked = onToggleChecked,
+            )
+        }
+    }
+}
+
+@Composable
+fun TodoItemContent(
+    emoji: String,
+    subject: String,
+    content: String,
+    checked: Boolean,
+    onToggleChecked: () -> Unit,
+) {
+    var folding by remember { mutableStateOf(true) } // 是否收起内容
+    TodoItemContentLayout(
+        folding = folding || content.isEmpty(),
+        icon = {
+            IconButton(onClick = onToggleChecked) {
+                if (!checked) {
+                    Text(text = emoji)
+                } else {
+                    Icon(
+                        painter = painterResource(id = R.drawable.check),
+                        contentDescription = stringResource(id = R.string.checked_todo)
+                    )
+                }
+            }
+        },
+        subject = {
+            Text(text = subject)
+        },
+        foldingIcon = {
+            if (content.isNotEmpty()) {
+                IconButton(onClick = { folding = !folding }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.folding),
+                        contentDescription = stringResource(id = R.string.toggle_folding),
+                        modifier = Modifier.rotate(if (folding) 0f else -90f)
+                    )
+                }
+            }
+        },
+        foldingContent = { modifier ->
+            Text(text = content, modifier = modifier)
+        }
+    )
+}
+
+/**
+ * 一个具有四个槽的 layout
+ */
+@Composable
+fun TodoItemContentLayout(
+    folding: Boolean,
+    icon: @Composable (() -> Unit),
+    subject: @Composable (() -> Unit),
+    foldingIcon: @Composable (() -> Unit),
+    foldingContent: @Composable ((Modifier) -> Unit)
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp)
+            .animateContentSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Row(
-                modifier = Modifier.padding(10.dp), // 10dp 水平: 与子项间隔相同, 竖直: 保持最小高度为 20dp + content size
-                horizontalArrangement = Arrangement.spacedBy(10.dp), // 子项水平相隔 10dp
+                modifier = Modifier.padding(end = 10.dp), // 与右边按钮最少间隔 10dp
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start), // 子项水平相隔 10dp
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onToggleChecked) {
-                    if (!shownChecked) {
-                        Text(text = emoji)
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.check),
-                            contentDescription = stringResource(id = R.string.checked_todo)
-                        )
-                    }
-                }
-                Text(text = subject)
+                icon()
+                subject()
             }
+            foldingIcon()
+        }
+        if (!folding) {
+            foldingContent(Modifier.fillMaxWidth(0.8f).padding(bottom = 10.dp))
         }
     }
 }
@@ -115,28 +190,49 @@ fun Modifier.swipeable(
     }
     offset {
         IntOffset(offsetX.value.roundToInt(), 0)
-    }.pointerInput(Unit) {
-        width = size.width.toFloat()
-        offsetX.updateBounds(
-            lowerBound = 0f,
-            upperBound = 2 * width
-        )
-    }.draggable(
-        state = draggableState,
-        orientation = Orientation.Horizontal,
-        onDragStopped = { velocity ->
+    }
+        .pointerInput(Unit) {
+            width = size.width.toFloat()
+            offsetX.updateBounds(
+                lowerBound = 0f,
+                upperBound = 2 * width
+            )
+        }
+        .draggable(
+            state = draggableState,
+            orientation = Orientation.Horizontal,
+            onDragStopped = { velocity ->
 //            Log.i("DRAG_STOP", "width is $width")
 //            Log.i("DRAG_STOP", "velocity is $velocity")
-            // 经过打印大砍 width 在 900 多, velocity 轻轻的时为一两千, 稍微不轻就接近万了
-            val targetOffsetX = offsetX.value + velocity
-            if (targetOffsetX > flingThresholdOffsetX || offsetX.value >= thresholdOffsetX) {
-                onThreshold()
-                offsetX.animateTo(flingThresholdOffsetX, initialVelocity = velocity)
-                onRight()
-            } else {
-                onBelowThreshold()
-                offsetX.animateTo(0f, initialVelocity = velocity)
+                // 经过打印大砍 width 在 900 多, velocity 轻轻的时为一两千, 稍微不轻就接近万了
+                val targetOffsetX = offsetX.value + velocity
+                if (targetOffsetX > flingThresholdOffsetX || offsetX.value >= thresholdOffsetX) {
+                    onThreshold()
+                    offsetX.animateTo(flingThresholdOffsetX, initialVelocity = velocity)
+                    onRight()
+                } else {
+                    onBelowThreshold()
+                    offsetX.animateTo(0f, initialVelocity = velocity)
+                }
             }
-        }
-    )
+        )
+
+
+}
+
+@Preview
+@Composable
+fun ItemPreview() {
+    var checked by remember {
+        mutableStateOf(false)
+    }
+    com.github.caoyfcode.todo.ui.theme.TodoTheme {
+        TodoItem(
+            emoji = "😀",
+            subject = "subject",
+            content = "content content",
+            checked = checked,
+            onToggleChecked = { checked = ! checked }
+        )
+    }
 }

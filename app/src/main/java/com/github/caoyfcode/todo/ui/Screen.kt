@@ -17,6 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.caoyfcode.todo.R
+import com.github.caoyfcode.todo.entity.Todo
 import com.github.caoyfcode.todo.model.TodoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,8 +36,8 @@ fun Screen(viewModel: TodoViewModel) {
         }!!.name
     }
 
-    val uncheckedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
-    val checkedTodos: MutableList<Triple<Int, String, String>> = mutableListOf()
+    val uncheckedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
+    val checkedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
     for (todo in todos) {
         if (selectedGroup >= 0 && selectedGroup != todo.groupUid) {
             continue
@@ -45,9 +46,9 @@ fun Screen(viewModel: TodoViewModel) {
             it.uid == todo.groupUid
         }!!.icon
         if (todo.checked) {
-            checkedTodos += Triple(todo.uid, groupIcon, todo.subject)
+            checkedTodos += Pair(groupIcon, todo)
         } else {
-            uncheckedTodos += Triple(todo.uid, groupIcon, todo.subject)
+            uncheckedTodos += Pair(groupIcon, todo)
         }
     }
     Navigation(
@@ -114,15 +115,15 @@ fun TopBar(
 /**
  * 主要内容
  * @param paddingValues 由 Scaffold 获得
- * @param checkedTodos a list of (uid, group emoji, subject)
+ * @param checkedTodos a list of (group emoji, todo_item)
  * @param uncheckedTodos same
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Content(
     paddingValues: PaddingValues,
-    checkedTodos: List<Triple<Int, String, String>>, // uid, group emoji, subject
-    uncheckedTodos: List<Triple<Int, String, String>>, // uid, group emoji, subject
+    checkedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
+    uncheckedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
     onToggleCheckedTodo: (Int) -> Unit,
 ) {
     Box(
@@ -147,28 +148,30 @@ fun Content(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp), // 没项相隔 20dp
             ) {
-                items(uncheckedTodos, key = { it.first }) {
+                items(uncheckedTodos, key = { it.second.uid }) {
                     TodoItem(
                         modifier = Modifier.animateItemPlacement(),
-                        emoji = it.second,
-                        subject = it.third,
+                        emoji = it.first,
+                        subject = it.second.subject,
+                        content = it.second.content,
                         checked = false,
                         onToggleChecked = {
-                            onToggleCheckedTodo(it.first)
+                            onToggleCheckedTodo(it.second.uid)
                         }
                     )
                 }
                 item(key = -1) {
                     Divider(color = MaterialTheme.colorScheme.secondary, modifier = Modifier.animateItemPlacement())
                 }
-                items(checkedTodos, key = { it.first }) {
+                items(checkedTodos, key = { it.second.uid }) {
                     TodoItem(
                         modifier = Modifier.animateItemPlacement(),
-                        emoji = it.second,
-                        subject = it.third,
+                        emoji = it.first,
+                        subject = it.second.subject,
+                        content = it.second.content,
                         checked = true,
                         onToggleChecked = {
-                            onToggleCheckedTodo(it.first)
+                            onToggleCheckedTodo(it.second.uid)
                         }
                     )
                 }

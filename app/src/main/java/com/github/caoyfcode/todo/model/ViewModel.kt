@@ -24,13 +24,14 @@ class TodoViewModel: ViewModel() {
     private val _todos: MutableLiveData<List<Todo>> by lazy {
         MutableLiveData(
             listOf(
-                Todo(0, 3, "打扫"),
-                Todo(1, 1, "读代码"),
-                Todo(2, 1, "学习视频"),
-                Todo(3, 0, "领钱"),
+                Todo(0, 3, "打扫", "1.地板\n2.窗户"),
+                Todo(1, 1, "读代码", "1.kotlin\n2.android"),
+                Todo(2, 1, "学习视频", "打开bilibili学习"),
+                Todo(3, 0, "领钱", "白日做梦"),
                 Todo(4, 3, "发呆"),
                 Todo(5, 2, "打游戏"),
                 Todo(6, 0, "写代码"),
+                Todo(7, 1, "读书", "", true),
             )
         )
     }
