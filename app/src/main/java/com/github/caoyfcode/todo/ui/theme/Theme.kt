@@ -19,16 +19,16 @@ private val defaultDarkColorScheme = darkColorScheme()
 private val defaultLightColorScheme = lightColorScheme()
 
 private val DarkColorScheme = darkColorScheme(
-    primary = defaultDarkColorScheme.background,
-    onPrimary = defaultDarkColorScheme.onBackground,
+    primary = defaultDarkColorScheme.onBackground,
+    onPrimary = DarkSecondary,
     secondary = DarkSecondary,
     onSecondary = defaultDarkColorScheme.onBackground,
     tertiary = defaultDarkColorScheme.background,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = defaultLightColorScheme.background,
-    onPrimary = defaultLightColorScheme.onBackground,
+    primary = defaultLightColorScheme.onBackground,
+    onPrimary = LightSecondary,
     secondary = LightSecondary,
     onSecondary = defaultLightColorScheme.onBackground,
     tertiary = defaultLightColorScheme.background,

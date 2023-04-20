@@ -17,12 +17,22 @@ import com.github.caoyfcode.todo.R
 import com.github.caoyfcode.todo.entity.Todo
 import com.github.caoyfcode.todo.model.TodoViewModel
 
+enum class TodoEditorState {
+    Closed,
+    EditTodo,
+    AddTodo,
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Screen(viewModel: TodoViewModel) {
     val groups by viewModel.groups.observeAsState(viewModel.groups.value!!)
     val todos by viewModel.todos.observeAsState(viewModel.todos.value!!)
 
+    var editorState by rememberSaveable {
+        mutableStateOf(TodoEditorState.Closed)
+    }
+    var editTodo: Todo? = null
     var selectedGroup by rememberSaveable { mutableStateOf(-1) }
 
     val selectedName = if (selectedGroup < 0) {
@@ -32,7 +42,6 @@ fun Screen(viewModel: TodoViewModel) {
             it.uid == selectedGroup
         }!!.name
     }
-
     val uncheckedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
     val checkedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
     for (todo in todos) {
@@ -60,7 +69,10 @@ fun Screen(viewModel: TodoViewModel) {
             topBar = {
                 TopBar(
                     group = selectedName,
-                    onNavigationCLick = openNavigation,
+                    onNavigationClick = openNavigation,
+                    onAddClick = {
+                        editorState = TodoEditorState.AddTodo
+                    }
                 )
             },
         ) { paddingValues ->
@@ -77,18 +89,47 @@ fun Screen(viewModel: TodoViewModel) {
             )
         }
     }
+
+    when (editorState) {
+        TodoEditorState.AddTodo -> {
+            TodoEditorDialog(
+                editTodo = Todo(-1, -1, ""),
+                confirmString = "添加",
+                groups = groups,
+                onDismiss = { editorState = TodoEditorState.Closed },
+                onConfirm = {
+                    viewModel.addTodo(it)
+                    editorState = TodoEditorState.Closed
+                }
+            )
+        }
+        TodoEditorState.EditTodo -> {
+            TodoEditorDialog(
+                editTodo = editTodo!!,
+                confirmString = "修改",
+                groups = groups,
+                onDismiss = { editorState = TodoEditorState.Closed },
+                onConfirm = {
+                    viewModel.changeTodo(it)
+                    editorState = TodoEditorState.Closed
+                }
+            )
+        }
+        TodoEditorState.Closed -> {}
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
     group: String,
-    onNavigationCLick: () -> Unit,
+    onNavigationClick: () -> Unit,
+    onAddClick: () -> Unit,
 ) {
     TopAppBar(
         title = { Text(text = group) },
         navigationIcon = {
-            IconButton(onClick = onNavigationCLick) {
+            IconButton(onClick = onNavigationClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.list),
                     contentDescription = stringResource(id = R.string.all_groups)
@@ -102,7 +143,7 @@ fun TopBar(
                     contentDescription = stringResource(id = R.string.search)
                 )
             }
-            IconButton(onClick = { /*TODO*/ }) {
+            IconButton(onClick = onAddClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.add),
                     contentDescription = stringResource(id = R.string.add_todo)
