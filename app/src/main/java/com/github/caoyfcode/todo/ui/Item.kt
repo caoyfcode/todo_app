@@ -56,7 +56,6 @@ fun TodoItem(
             MaterialTheme.colorScheme.onBackground
         }
         SwipeLayout(
-            modifier = Modifier.fillMaxWidth(),
             onRightThreshold = { reverseChecked = true },
             onBelowRightThreshold = { reverseChecked = false },
             onRight = onToggleChecked,
@@ -120,7 +119,6 @@ enum class DragState {
  * - 向左拖动时, 拖动到背景大小时松手将停在此处, 否则回到原点
  * 当拖动经过阈值时, 将调用 `onRightThreshold` 与 `onBelowRightThreshold`
  *
- * @param modifier 设置大小约束
  * @param onRightThreshold 整体移动时, 向右经过右阈值调用
  * @param onBelowRightThreshold 整体移动时, 向左经过右阈值调用
  * @param onRight 向右移出屏幕后调用
@@ -129,7 +127,6 @@ enum class DragState {
  */
 @Composable
 fun SwipeLayout(
-    modifier: Modifier,
     onRightThreshold: () -> Unit,
     onBelowRightThreshold: () -> Unit,
     onRight: () -> Unit,
@@ -195,7 +192,7 @@ fun SwipeLayout(
     }
 
     Box(
-        modifier = modifier.offset {
+        modifier = Modifier.offset {
             IntOffset(offsetX.value.roundToInt(), 0)
         },
         contentAlignment = Alignment.CenterEnd
