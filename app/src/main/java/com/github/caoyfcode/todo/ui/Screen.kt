@@ -17,22 +17,18 @@ import com.github.caoyfcode.todo.R
 import com.github.caoyfcode.todo.entity.Todo
 import com.github.caoyfcode.todo.model.TodoViewModel
 
-enum class TodoEditorState {
-    Closed,
-    EditTodo,
-    AddTodo,
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Screen(viewModel: TodoViewModel) {
     val groups by viewModel.groups.observeAsState(viewModel.groups.value!!)
     val todos by viewModel.todos.observeAsState(viewModel.todos.value!!)
 
-    var editorState by rememberSaveable {
-        mutableStateOf(TodoEditorState.Closed)
+    var editorMode by rememberSaveable {
+        mutableStateOf<EditorMode?>(null)
     }
-    var editTodo: Todo? = null
+    var editorTodoUid by rememberSaveable {
+        mutableStateOf(-1)
+    }
     var selectedGroup by rememberSaveable { mutableStateOf(-1) }
 
     val selectedName = if (selectedGroup < 0) {
@@ -71,7 +67,7 @@ fun Screen(viewModel: TodoViewModel) {
                     group = selectedName,
                     onNavigationClick = openNavigation,
                     onAddClick = {
-                        editorState = TodoEditorState.AddTodo
+                        editorMode = EditorMode.Add
                     }
                 )
             },
@@ -83,6 +79,10 @@ fun Screen(viewModel: TodoViewModel) {
                 onToggleCheckedTodo = { uid ->
                     viewModel.toggleCheckedTodo(uid)
                 },
+                onEditTodo = {
+                    editorTodoUid = it
+                    editorMode = EditorMode.Modify
+                },
                 onDeleteTodo = {
                     viewModel.deleteTodo(it)
                 }
@@ -90,32 +90,32 @@ fun Screen(viewModel: TodoViewModel) {
         }
     }
 
-    when (editorState) {
-        TodoEditorState.AddTodo -> {
+    when (editorMode) {
+        EditorMode.Add -> {
             TodoEditorDialog(
                 editTodo = Todo(-1, -1, ""),
-                confirmString = "添加",
+                mode = EditorMode.Add,
                 groups = groups,
-                onDismiss = { editorState = TodoEditorState.Closed },
+                onDismiss = { editorMode = null },
                 onConfirm = {
                     viewModel.addTodo(it)
-                    editorState = TodoEditorState.Closed
+                    editorMode = null
                 }
             )
         }
-        TodoEditorState.EditTodo -> {
+        EditorMode.Modify -> {
             TodoEditorDialog(
-                editTodo = editTodo!!,
-                confirmString = "修改",
+                editTodo = todos.find { it.uid == editorTodoUid }!!,
+                mode = EditorMode.Modify,
                 groups = groups,
-                onDismiss = { editorState = TodoEditorState.Closed },
+                onDismiss = { editorMode = null },
                 onConfirm = {
-                    viewModel.changeTodo(it)
-                    editorState = TodoEditorState.Closed
+                    viewModel.modifyTodo(it)
+                    editorMode = null
                 }
             )
         }
-        TodoEditorState.Closed -> {}
+        null -> {}
     }
 }
 
@@ -167,6 +167,7 @@ fun Content(
     uncheckedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
     onToggleCheckedTodo: (Int) -> Unit,
     onDeleteTodo: (Int) -> Unit,
+    onEditTodo: (Int) -> Unit,
 ) {
     // 经观察, animateItemPlacement 的原理为重组时找到原来相同 key 的位置, 放置在此处，之后向目标移动
     // 因而，可以仅让 toggle 后的 item 进行 scale in, 其余不 scale in
@@ -207,7 +208,7 @@ fun Content(
                             shouldScaleInIds.add(it.second.uid)
                             onToggleCheckedTodo(it.second.uid)
                         },
-                        onEditClicked = {},
+                        onEditClicked = { onEditTodo(it.second.uid) },
                         onDeleteClicked = { onDeleteTodo(it.second.uid) },
                     )
                 }
@@ -226,7 +227,7 @@ fun Content(
                             shouldScaleInIds.add(it.second.uid)
                             onToggleCheckedTodo(it.second.uid)
                         },
-                        onEditClicked = {},
+                        onEditClicked = { onEditTodo(it.second.uid) },
                         onDeleteClicked = { onDeleteTodo(it.second.uid) },
                     )
                 }

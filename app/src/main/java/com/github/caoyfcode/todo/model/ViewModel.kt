@@ -67,10 +67,10 @@ class TodoViewModel: ViewModel() {
         _todos.value = _todos.value?.filter { it.uid != uid }
     }
 
-    fun changeTodo(changed: Todo) {
+    fun modifyTodo(modified: Todo) {
         _todos.value = _todos.value?.map {
-            if (it.uid == changed.uid) {
-                changed
+            if (it.uid == modified.uid) {
+                modified
             } else {
                 it
             }
