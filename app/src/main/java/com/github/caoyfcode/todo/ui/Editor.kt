@@ -29,7 +29,7 @@ fun TodoEditorDialog(
         mutableStateOf(editTodo.groupUid)
     }
     var value by rememberSaveable {
-        mutableStateOf(editTodo.subject + if (editTodo.content.isEmpty()) "" else "\n" + editTodo.content.isEmpty())
+        mutableStateOf(editTodo.subject + if (editTodo.content.isEmpty()) "" else "\n" + editTodo.content)
     }
     var menuExpanded by rememberSaveable {
         mutableStateOf(false)
