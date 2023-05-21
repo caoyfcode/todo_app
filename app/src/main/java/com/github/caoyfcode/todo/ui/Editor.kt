@@ -14,17 +14,23 @@ import com.github.caoyfcode.todo.entity.Group
 import com.github.caoyfcode.todo.entity.Todo
 
 
-enum class EditorMode {Add, Modify}
+sealed class EditorMode {
+    object Add: EditorMode()
+    class Modify(val todo: Todo): EditorMode()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoEditorDialog(
-    editTodo: Todo,
     mode: EditorMode,
     groups: List<Group>,
     onDismiss: () -> Unit,
     onConfirm: (Todo) -> Unit,
 ) {
+    val editTodo = when (mode) {
+        is EditorMode.Add -> Todo(-1, -1, "")
+        is EditorMode.Modify -> mode.todo
+    }
     var groupUid by rememberSaveable {
         mutableStateOf(editTodo.groupUid)
     }
@@ -120,8 +126,8 @@ fun TodoEditorDialog(
             }) {
                 Text(
                     text = when (mode) {
-                        EditorMode.Add -> stringResource(id = R.string.add)
-                        EditorMode.Modify -> stringResource(id = R.string.modify)
+                        is EditorMode.Add -> stringResource(id = R.string.add)
+                        is EditorMode.Modify -> stringResource(id = R.string.modify)
                     }
                 )
             }

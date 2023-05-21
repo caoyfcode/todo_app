@@ -6,8 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -15,21 +13,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.caoyfcode.todo.R
 import com.github.caoyfcode.todo.entity.Todo
-import com.github.caoyfcode.todo.model.TodoViewModel
+import com.github.caoyfcode.todo.viewmodel.TodoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Screen(viewModel: TodoViewModel) {
-    val groups by viewModel.groups.observeAsState(viewModel.groups.value!!)
-    val todos by viewModel.todos.observeAsState(viewModel.todos.value!!)
-
-    var editorMode by rememberSaveable {
-        mutableStateOf<EditorMode?>(null)
-    }
-    var editorTodoUid by rememberSaveable {
-        mutableStateOf(-1)
-    }
-    var selectedGroup by rememberSaveable { mutableStateOf(-1) }
+    val groups by viewModel.groups.collectAsState()
+    val todos by viewModel.filteredTodos.collectAsState()
+    val selectedGroup by viewModel.selectedGroupUid.collectAsState()
+    val editorMode by viewModel.editorMode.collectAsState()
 
     val selectedName = if (selectedGroup < 0) {
         stringResource(id = R.string.all_todo_group_name)
@@ -41,9 +33,6 @@ fun Screen(viewModel: TodoViewModel) {
     val uncheckedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
     val checkedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
     for (todo in todos) {
-        if (selectedGroup >= 0 && selectedGroup != todo.groupUid) {
-            continue
-        }
         val groupIcon = groups.find {
             it.uid == todo.groupUid
         }!!.icon
@@ -57,7 +46,7 @@ fun Screen(viewModel: TodoViewModel) {
         groups = groups,
         selectedGroup = selectedGroup,
         onGroupSelected = { selected ->
-            selectedGroup = selected
+            viewModel.selectGroup(selected)
         }
     ) { openNavigation ->
         Scaffold(
@@ -67,7 +56,7 @@ fun Screen(viewModel: TodoViewModel) {
                     group = selectedName,
                     onNavigationClick = openNavigation,
                     onAddClick = {
-                        editorMode = EditorMode.Add
+                        viewModel.setEditorMode(EditorMode.Add)
                     }
                 )
             },
@@ -80,8 +69,7 @@ fun Screen(viewModel: TodoViewModel) {
                     viewModel.toggleCheckedTodo(uid)
                 },
                 onEditTodo = {
-                    editorTodoUid = it
-                    editorMode = EditorMode.Modify
+                    viewModel.setEditorMode(EditorMode.Modify(todos.find { todo ->  todo.uid == it }!!))
                 },
                 onDeleteTodo = {
                     viewModel.deleteTodo(it)
@@ -90,32 +78,20 @@ fun Screen(viewModel: TodoViewModel) {
         }
     }
 
-    when (editorMode) {
-        EditorMode.Add -> {
-            TodoEditorDialog(
-                editTodo = Todo(-1, -1, ""),
-                mode = EditorMode.Add,
-                groups = groups,
-                onDismiss = { editorMode = null },
-                onConfirm = {
-                    viewModel.addTodo(it)
-                    editorMode = null
+    val mode = editorMode
+    if (mode != null) {
+        TodoEditorDialog(
+            mode = mode,
+            groups = groups,
+            onDismiss = { viewModel.setEditorMode(null) },
+            onConfirm = {
+                when (mode) {
+                    is EditorMode.Add -> viewModel.addTodo(it)
+                    is EditorMode.Modify -> viewModel.modifyTodo(it)
                 }
-            )
-        }
-        EditorMode.Modify -> {
-            TodoEditorDialog(
-                editTodo = todos.find { it.uid == editorTodoUid }!!,
-                mode = EditorMode.Modify,
-                groups = groups,
-                onDismiss = { editorMode = null },
-                onConfirm = {
-                    viewModel.modifyTodo(it)
-                    editorMode = null
-                }
-            )
-        }
-        null -> {}
+                viewModel.setEditorMode(null)
+            }
+        )
     }
 }
 
