@@ -12,6 +12,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.caoyfcode.todo.R
+import com.github.caoyfcode.todo.entity.Group
 import com.github.caoyfcode.todo.entity.Todo
 import com.github.caoyfcode.todo.viewmodel.TodoViewModel
 
@@ -23,13 +24,16 @@ fun Screen(viewModel: TodoViewModel) {
     val selectedGroup by viewModel.selectedGroupUid.collectAsState()
     val editorMode by viewModel.editorMode.collectAsState()
 
-    val selectedName = if (selectedGroup < 0) {
-        stringResource(id = R.string.all_todo_group_name)
-    } else {
-        groups.find {
-            it.uid == selectedGroup
-        }!!.name
-    }
+    val navigationGroups: List<Group> = listOf(
+        Group(
+            uid = -1,
+            icon = stringResource(id = R.string.all_todo_group_icon),
+            name = stringResource(id = R.string.all_todo_group_name)
+        )
+    ) + groups // 左侧导航第一个组为所有待办
+    val selectedName = navigationGroups.find {
+        it.uid == selectedGroup
+    }!!.name
     val uncheckedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
     val checkedTodos: MutableList<Pair<String, Todo>> = mutableListOf()
     for (todo in todos) {
@@ -43,7 +47,7 @@ fun Screen(viewModel: TodoViewModel) {
         }
     }
     Navigation(
-        groups = groups,
+        groups = navigationGroups,
         selectedGroup = selectedGroup,
         onGroupSelected = { selected ->
             viewModel.selectGroup(selected)
@@ -146,7 +150,7 @@ fun Content(
     onEditTodo: (Int) -> Unit,
 ) {
     // 经观察, animateItemPlacement 的原理为重组时找到原来相同 key 的位置, 放置在此处，之后向目标移动
-    // 因而，可以仅让 toggle 后的 item 进行 scale in, 其余不 scale in
+    // 因而，可以仅让 toggle 后的 item 进行 scale in (淡入), 其余不 scale in
     val shouldScaleInIds = remember {
         mutableSetOf<Int>()
     }

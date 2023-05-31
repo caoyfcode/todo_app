@@ -6,7 +6,7 @@
     <string name="search">查找待办</string>
     <string name="all_groups">所有待办组</string>
     // 左部导航栏
-    <string name="add_group">添加待办组</string>
+    <string name="config_group">设置待办组</string>
     <string name="all_todo_group_name">所有待办</string>
     <string name="all_todo_group_icon">🔘</string>
     // 内容

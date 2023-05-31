@@ -9,10 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -108,26 +105,9 @@ fun NavigationContent(
             contentDescription = null,
         )
     }
-    // all item group
-    NavigationDrawerItem(
-        icon = {
-               Text(text = stringResource(id = R.string.all_todo_group_icon))
-        },
-        label = { 
-                Text(text = stringResource(id = R.string.all_todo_group_name))
-        }, 
-        selected = selectedGroup < 0,
-        onClick = {
-            onGroupSelected(-1)
-        },
-        modifier = Modifier
-            .padding(NavigationDrawerItemDefaults.ItemPadding),
-        colors = NavigationDrawerItemDefaults.colors(
-            selectedContainerColor = MaterialTheme.colorScheme.tertiary,
-            unselectedContainerColor = MaterialTheme.colorScheme.secondary,
-        )
-    )
-    LazyColumn {
+    LazyColumn(
+        modifier = Modifier.padding(top = 10.dp)
+    ) {
         items(groups) {
             NavigationDrawerItem(
                 icon = {
@@ -158,8 +138,8 @@ fun NavigationContent(
             ) {
                 IconButton(onClick = { /*TODO*/ }) {
                     Icon(
-                        painter = painterResource(id = R.drawable.add),
-                        contentDescription = stringResource(id = R.string.add_group)
+                        painter = painterResource(id = R.drawable.config),
+                        contentDescription = stringResource(id = R.string.config_group)
                     )
                 }
             }

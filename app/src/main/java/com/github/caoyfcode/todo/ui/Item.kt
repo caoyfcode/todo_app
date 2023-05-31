@@ -15,14 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.github.caoyfcode.todo.R
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.github.caoyfcode.todo.R
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -309,20 +311,42 @@ fun TodoItemContentLayout(
             .animateContentSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(
-                modifier = Modifier.padding(end = 10.dp), // 与右边按钮最少间隔 10dp
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start), // 子项水平相隔 10dp
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                icon()
-                subject()
-            }
-            foldingIcon()
-        }
+       Layout(
+           content = {
+               icon()
+               subject()
+               foldingIcon() // 注意, 这个可能为空
+           }
+       ) { measurables, constraints -> // 子项列表, 来自父项的约束
+           val iconPlaceable = measurables[0].measure(constraints) // icon
+           val foldingIconPlaceable = if (measurables.size == 3) { // 末尾的折叠图标可能不存在
+               measurables[2].measure(constraints)
+           } else {
+               null
+           }
+           val subjectMaxWidth = if (constraints.maxWidth == Constraints.Infinity) {
+               constraints.maxWidth
+           } else {
+               (constraints.maxWidth - iconPlaceable.width - (foldingIconPlaceable?.width ?: 0))
+                   .coerceAtLeast(0)
+           }
+           val subjectPlaceable = measurables[1].measure(constraints.copy(maxWidth = subjectMaxWidth))
+           val height = maxOf(iconPlaceable.height, subjectPlaceable.height, foldingIconPlaceable?.width ?: 0)
+           layout(width = constraints.maxWidth, height = height) {
+               iconPlaceable.placeRelative(
+                   x = 0,
+                   y = (height - iconPlaceable.height) / 2
+               )
+               subjectPlaceable.placeRelative(
+                   x = iconPlaceable.width,
+                   y = (height - subjectPlaceable.height) / 2
+               )
+               foldingIconPlaceable?.place(
+                   x = constraints.maxWidth - foldingIconPlaceable.width,
+                   y = (height - foldingIconPlaceable.height) / 2
+               )
+           }
+       }
         if (!folding) {
             foldingContent(
                 Modifier
