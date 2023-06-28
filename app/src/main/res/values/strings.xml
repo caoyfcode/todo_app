@@ -16,9 +16,12 @@
     <string name="toggle_folding">展开/收起待办内容</string>
     <string name="edit">编辑待办</string>
     <string name="delete">删除待办</string>
-    // 编辑器悬浮窗
+    // 待办编辑器对话框
     <string name="add">添加</string>
     <string name="modify">修改</string>
     <string name="cancel">取消</string>
     <string name="todo_content">待办内容</string>
+    // 组编辑器对话框
+    <string name="groups_editor_back">返回</string>
+    <string name="groups_editor_title">修改待办组</string>
 </resources>

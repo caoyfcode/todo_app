@@ -10,6 +10,7 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -91,6 +92,10 @@ fun NavigationContent(
     selectedGroup: Int, // uid of group, -1 if all todos
     onGroupSelected: (Int) -> Unit,
 ) {
+    var hasDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -136,7 +141,7 @@ fun NavigationContent(
                     .padding(NavigationDrawerItemDefaults.ItemPadding),
                 contentAlignment = Alignment.Center
             ) {
-                IconButton(onClick = { /*TODO*/ }) {
+                IconButton(onClick = { hasDialog = true }) {
                     Icon(
                         painter = painterResource(id = R.drawable.config),
                         contentDescription = stringResource(id = R.string.config_group)
@@ -144,6 +149,13 @@ fun NavigationContent(
                 }
             }
         }
+    }
+
+    if (hasDialog) {
+        GroupsEditorDialog(
+            groups = groups.filter { it.uid >= 0 },
+            onDismiss = { hasDialog = false }
+        )
     }
 }
 

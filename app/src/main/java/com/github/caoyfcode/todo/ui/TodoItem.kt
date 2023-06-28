@@ -311,42 +311,43 @@ fun TodoItemContentLayout(
             .animateContentSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-       Layout(
-           content = {
-               icon()
-               subject()
-               foldingIcon() // 注意, 这个可能为空
-           }
-       ) { measurables, constraints -> // 子项列表, 来自父项的约束
-           val iconPlaceable = measurables[0].measure(constraints) // icon
-           val foldingIconPlaceable = if (measurables.size == 3) { // 末尾的折叠图标可能不存在
-               measurables[2].measure(constraints)
-           } else {
-               null
-           }
-           val subjectMaxWidth = if (constraints.maxWidth == Constraints.Infinity) {
-               constraints.maxWidth
-           } else {
-               (constraints.maxWidth - iconPlaceable.width - (foldingIconPlaceable?.width ?: 0))
-                   .coerceAtLeast(0)
-           }
-           val subjectPlaceable = measurables[1].measure(constraints.copy(maxWidth = subjectMaxWidth))
-           val height = maxOf(iconPlaceable.height, subjectPlaceable.height, foldingIconPlaceable?.width ?: 0)
-           layout(width = constraints.maxWidth, height = height) {
-               iconPlaceable.placeRelative(
-                   x = 0,
-                   y = (height - iconPlaceable.height) / 2
-               )
-               subjectPlaceable.placeRelative(
-                   x = iconPlaceable.width,
-                   y = (height - subjectPlaceable.height) / 2
-               )
-               foldingIconPlaceable?.place(
-                   x = constraints.maxWidth - foldingIconPlaceable.width,
-                   y = (height - foldingIconPlaceable.height) / 2
-               )
-           }
-       }
+        Layout(
+            modifier = Modifier.wrapContentSize(),
+            content = {
+                icon()
+                subject()
+                foldingIcon() // 注意, 这个可能为空
+            }
+        ) { measurables, constraints -> // 子项列表, 来自父项的约束
+            val iconPlaceable = measurables[0].measure(constraints) // icon
+            val foldingIconPlaceable = if (measurables.size == 3) { // 末尾的折叠图标可能不存在
+                measurables[2].measure(constraints)
+            } else {
+                null
+            }
+            val subjectMaxWidth = if (constraints.maxWidth == Constraints.Infinity) {
+                constraints.maxWidth
+            } else {
+                (constraints.maxWidth - iconPlaceable.width - (foldingIconPlaceable?.width ?: 0))
+                    .coerceAtLeast(0)
+            }
+            val subjectPlaceable = measurables[1].measure(constraints.copy(maxWidth = subjectMaxWidth))
+            val height = maxOf(iconPlaceable.height, subjectPlaceable.height, foldingIconPlaceable?.width ?: 0)
+            layout(width = constraints.maxWidth, height = height) {
+                iconPlaceable.placeRelative(
+                    x = 0,
+                    y = (height - iconPlaceable.height) / 2
+                )
+                subjectPlaceable.placeRelative(
+                    x = iconPlaceable.width,
+                    y = (height - subjectPlaceable.height) / 2
+                )
+                foldingIconPlaceable?.place(
+                    x = constraints.maxWidth - foldingIconPlaceable.width,
+                    y = (height - foldingIconPlaceable.height) / 2
+                )
+            }
+        }
         if (!folding) {
             foldingContent(
                 Modifier
