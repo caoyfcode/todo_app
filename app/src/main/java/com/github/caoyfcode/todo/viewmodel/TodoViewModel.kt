@@ -91,4 +91,31 @@ class TodoViewModel: ViewModel() {
             }
         }
     }
+
+    fun addGroup(group: Group) {
+        var biggestUid = -1
+        _groups.value.map {
+            if (it.uid > biggestUid) {
+                biggestUid = it.uid
+            }
+        }
+        _groups.value = _groups.value.plus(
+            group.copy(uid = biggestUid + 1)
+        )
+    }
+
+    fun deleteGroup(uid: Int) {
+        _groups.value = _groups.value.filter { it.uid != uid }
+        _todos.value = _todos.value.filter { it.groupUid != uid }
+    }
+
+    fun modifyGroup(modified: Group) {
+        _groups.value = _groups.value.map {
+            if (it.uid == modified.uid) {
+                modified
+            } else {
+                it
+            }
+        }
+    }
 }

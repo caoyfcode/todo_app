@@ -1,7 +1,9 @@
 package com.github.caoyfcode.todo.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -10,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,9 +22,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -37,6 +43,8 @@ import com.github.caoyfcode.todo.entity.Group
 fun GroupsEditorDialog(
     groups: List<Group>,
     onDismiss: () -> Unit,
+    onModifyGroup: (Group) -> Unit,
+    onDeleteGroup: (Int) -> Unit
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -47,7 +55,6 @@ fun GroupsEditorDialog(
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.secondary,
             topBar = {
                 TopAppBar(
                     navigationIcon = {
@@ -91,8 +98,8 @@ fun GroupsEditorDialog(
                     items(groups) {
                         GroupItem(
                             group = it,
-                            onModify = {},
-                            onDeleteClicked = {}
+                            onModify = onModifyGroup,
+                            onDeleteClicked = { onDeleteGroup(it.uid) }
                         )
                     }
                 }
@@ -101,24 +108,52 @@ fun GroupsEditorDialog(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+val groupIcons = listOf(
+    "\uD83D\uDCBC", "\uD83D\uDCD6", "\uD83D\uDE0A", "\uD83E\uDDFA",
+    "\uD83D\uDC5F", "\uD83D\uDD14", "\uD83C\uDFB5", "\uD83C\uDFA7",
+    "\uD83C\uDFBB", "\uD83D\uDCDE", "\uD83D\uDCBB", "\uD83D\uDCFD️",
+    "\uD83D\uDD0D", "\uD83D\uDCA1", "\uD83D\uDD6F️", "\uD83C\uDFF7️",
+    "\uD83D\uDCB0", "✉️", "\uD83D\uDCC1", "\uD83D\uDD11",
+    "\uD83D\uDD27", "\uD83E\uDDEA", "\uD83D\uDD2D", "\uD83D\uDC8A",
+    "\uD83D\uDED2",
+)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun GroupItem(
     group: Group,
     onModify: (Group) -> Unit,
     onDeleteClicked: () -> Unit,
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current // 用来关闭键盘
+    val focusManager = LocalFocusManager.current // 用来释放焦点
+
+    var iconPickerExpanded by rememberSaveable {
+        mutableStateOf(false)
+    }
+    
     OutlinedTextField(
         singleLine = true,
         leadingIcon = {
-            IconButton(onClick = { /*TODO*/ }) {
+            IconButton(onClick = {
+                iconPickerExpanded = true
+            }) {
                 Text(text = group.icon)
             }
+            GroupIconPicker(
+                expanded = iconPickerExpanded,
+                onDismiss = { iconPickerExpanded = false },
+                onIconClick = {
+                    iconPickerExpanded = false
+                    if (it != group.icon) {
+                        onModify(group.copy(icon = it))
+                    }
+                },
+                icons = groupIcons,
+            )
         },
         trailingIcon = {
-            IconButton(
-                onClick = { }
-            ) {
+            IconButton(onClick = onDeleteClicked) {
                 Icon(
                     painter = painterResource(id = R.drawable.cross_small),
                     contentDescription = null
@@ -127,15 +162,47 @@ fun GroupItem(
         },
         shape = RoundedCornerShape(100),
         value = group.name,
-        onValueChange = {},
+        onValueChange = {
+            onModify(group.copy(name = it))
+        },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Done
         ),
         keyboardActions = KeyboardActions(
             onDone = {
-
+                keyboardController?.hide() // 关闭软键盘
+                focusManager.clearFocus() // 释放焦点
             }
         )
     )
+}
+
+@Composable
+fun GroupIconPicker(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onIconClick: (icon: String) -> Unit,
+    icons: List<String>
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        modifier = Modifier.fillMaxHeight(0.3f)
+    ) {
+        for (icon in icons) {
+            Text(
+                text = icon,
+                modifier = Modifier
+                    .padding(
+                        vertical = 10.dp,
+                        horizontal = 20.dp
+                    )
+                    .clickable(
+                        onClick = { onIconClick(icon) }
+                    )
+            )
+        }
+    }
+
 }

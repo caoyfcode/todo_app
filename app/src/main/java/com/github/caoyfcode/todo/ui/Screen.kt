@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -23,6 +24,10 @@ fun Screen(viewModel: TodoViewModel) {
     val todos by viewModel.filteredTodos.collectAsState()
     val selectedGroup by viewModel.selectedGroupUid.collectAsState()
     val editorMode by viewModel.editorMode.collectAsState()
+
+    var groupsEditorEnabled by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     val navigationGroups: List<Group> = listOf(
         Group(
@@ -51,6 +56,9 @@ fun Screen(viewModel: TodoViewModel) {
         selectedGroup = selectedGroup,
         onGroupSelected = { selected ->
             viewModel.selectGroup(selected)
+        },
+        onGroupsEditorRequest = {
+            groupsEditorEnabled = true
         }
     ) { openNavigation ->
         Scaffold(
@@ -95,6 +103,13 @@ fun Screen(viewModel: TodoViewModel) {
                 }
                 viewModel.setEditorMode(null)
             }
+        )
+    } else if (groupsEditorEnabled) {
+        GroupsEditorDialog(
+            groups = groups.filter { it.uid >= 0 },
+            onDismiss = { groupsEditorEnabled = false },
+            onModifyGroup = { viewModel.modifyGroup(it) },
+            onDeleteGroup = { viewModel.deleteGroup(it) }
         )
     }
 }
