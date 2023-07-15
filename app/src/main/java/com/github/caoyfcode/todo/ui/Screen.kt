@@ -28,6 +28,9 @@ fun Screen(viewModel: TodoViewModel) {
     var groupsEditorEnabled by rememberSaveable {
         mutableStateOf(false)
     }
+    var groupsEmptyAlertShown by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     val navigationGroups: List<Group> = listOf(
         Group(
@@ -68,7 +71,11 @@ fun Screen(viewModel: TodoViewModel) {
                     group = selectedName,
                     onNavigationClick = openNavigation,
                     onAddClick = {
-                        viewModel.setEditorMode(EditorMode.Add)
+                        if (groups.isEmpty()) {
+                            groupsEmptyAlertShown = true
+                        } else {
+                            viewModel.setEditorMode(EditorMode.Add)
+                        }
                     }
                 )
             },
@@ -91,7 +98,25 @@ fun Screen(viewModel: TodoViewModel) {
     }
 
     val mode = editorMode
-    if (mode != null) {
+    if (groupsEmptyAlertShown) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(text = "无待办组")
+            },
+            text = {
+                Text(text = "添加待办至少需要一个待办组，请先添加一个组")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    groupsEmptyAlertShown = false
+                    groupsEditorEnabled = true
+                }) {
+                    Text(text = "确定")
+                }
+            }
+        )
+    } else if (mode != null) {
         TodoEditorDialog(
             mode = mode,
             groups = groups,
