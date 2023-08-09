@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.github.caoyfcode.todo.R
-import com.github.caoyfcode.todo.entity.Group
+import com.github.caoyfcode.todo.db.entity.Group
 
 /**
  * 侧边栏组件

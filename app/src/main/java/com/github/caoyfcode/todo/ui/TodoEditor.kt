@@ -10,8 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.github.caoyfcode.todo.R
-import com.github.caoyfcode.todo.entity.Group
-import com.github.caoyfcode.todo.entity.Todo
+import com.github.caoyfcode.todo.db.entity.Group
+import com.github.caoyfcode.todo.db.entity.Todo
 
 
 sealed class TodoEditorMode {
@@ -28,7 +28,7 @@ fun TodoEditorDialog(
     onConfirm: (Todo) -> Unit,
 ) {
     val editTodo = when (mode) {
-        is TodoEditorMode.Add -> Todo(-1, -1, "")
+        is TodoEditorMode.Add -> Todo(groupUid = -1, subject = "")
         is TodoEditorMode.Modify -> mode.todo
     }
     var groupUid by rememberSaveable {

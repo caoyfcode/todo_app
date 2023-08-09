@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.github.caoyfcode.todo.R
-import com.github.caoyfcode.todo.entity.Group
+import com.github.caoyfcode.todo.db.entity.Group
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +44,7 @@ fun GroupsEditorDialog(
     groups: List<Group>,
     onDismiss: () -> Unit,
     onModifyGroup: (Group) -> Unit,
-    onDeleteGroup: (Int) -> Unit,
+    onDeleteGroup: (Group) -> Unit,
     onAddGroup: (Group) -> Unit,
 ) {
     Dialog(
@@ -71,7 +71,7 @@ fun GroupsEditorDialog(
                     },
                     actions = {
                         IconButton(onClick = {
-                            onAddGroup(Group(uid = -1, icon = groupIcons[0], name = ""))
+                            onAddGroup(Group(icon = groupIcons[0], name = ""))
                         }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.add),
@@ -102,7 +102,7 @@ fun GroupsEditorDialog(
                         GroupItem(
                             group = it,
                             onModify = onModifyGroup,
-                            onDeleteClicked = { onDeleteGroup(it.uid) }
+                            onDeleteClicked = { onDeleteGroup(it) }
                         )
                     }
                 }

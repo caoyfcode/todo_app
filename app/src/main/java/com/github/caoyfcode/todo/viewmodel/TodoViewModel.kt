@@ -2,47 +2,35 @@ package com.github.caoyfcode.todo.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.caoyfcode.todo.db.AppDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import com.github.caoyfcode.todo.entity.Group
-import com.github.caoyfcode.todo.entity.Todo
+import com.github.caoyfcode.todo.db.entity.Group
+import com.github.caoyfcode.todo.db.entity.Todo
 import com.github.caoyfcode.todo.ui.TodoEditorMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
-class TodoViewModel: ViewModel() {
+class TodoViewModel(private val database: AppDatabase): ViewModel() {
+
     // 所有的待办组
-    private val _groups: MutableStateFlow<List<Group>> = MutableStateFlow(
-        listOf(
-            Group(0, "\uD83D\uDCBC", "工作"),
-            Group(1, "\uD83D\uDCD6", "学习"),
-            Group(2, "😊", "娱乐"),
-            Group(3, "\uD83E\uDDFA", "杂务")
-        )
-    )
-    val groups: StateFlow<List<Group>>
-        get() = _groups
-    // 所有的待办
-    private val _todos: MutableStateFlow<List<Todo>> = MutableStateFlow(
-        listOf(
-            Todo(0, 3, "打扫", "1.地板\n2.窗户"),
-            Todo(1, 1, "读代码", "1.kotlin\n2.android"),
-            Todo(2, 1, "学习视频", "打开bilibili学习"),
-            Todo(3, 0, "领钱", "白日做梦"),
-            Todo(4, 3, "发呆"),
-            Todo(5, 2, "打游戏"),
-            Todo(6, 0, "写代码"),
-            Todo(7, 1, "读书", "", true),
-        )
-    )
+    val groups: StateFlow<List<Group>> = database
+        .groupDao()
+        .getAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), listOf())
     // 左侧导航栏中选中的组 id, 选择全部则为 -1
     private var _selectedGroupUid: MutableStateFlow<Int> = MutableStateFlow(-1)
     val selectedGroupUid: StateFlow<Int>
         get() = _selectedGroupUid
     // 主页面显示的待办列表
-    val filteredTodos: StateFlow<List<Todo>> = combine(_todos, _selectedGroupUid) {
+    val filteredTodos: StateFlow<List<Todo>> = combine(
+        database.todoDao().getAll(),
+        _selectedGroupUid
+    ) {
         all, selected ->
         all.filter { selected < 0 || it.groupUid == selected }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), listOf())
@@ -74,71 +62,49 @@ class TodoViewModel: ViewModel() {
         _groupsEditorShown.value = shown
     }
 
-    fun toggleCheckedTodo(uid: Int) {
-        _todos.value = _todos.value.map {
-            if (it.uid == uid) {
-                it.copy(
-                    checked = !it.checked,
-                    checkTime = LocalDateTime.now()
-                )
-            } else {
-                it
-            }
-        }
-    }
-
     fun addTodo(todo: Todo) {
-        var biggestUid = -1
-        _todos.value.map {
-            if (it.uid > biggestUid) {
-                biggestUid = it.uid
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            database.todoDao().insert(todo)
         }
-        _todos.value = _todos.value.plus(
-            todo.copy(
-                uid = biggestUid + 1
-            )
-        )
     }
 
-    fun deleteTodo(uid: Int) {
-        _todos.value = _todos.value.filter { it.uid != uid }
+    fun deleteTodo(todo: Todo) {
+        viewModelScope.launch(Dispatchers.IO) {
+            database.todoDao().delete(todo)
+        }
     }
 
-    fun modifyTodo(modified: Todo) {
-        _todos.value = _todos.value.map {
-            if (it.uid == modified.uid) {
-                modified
-            } else {
-                it
-            }
+    fun modifyTodo(todo: Todo) {
+        viewModelScope.launch(Dispatchers.IO) {
+            database.todoDao().update(todo)
         }
+    }
+
+    fun toggleCheckedTodo(todo: Todo) {
+        modifyTodo(todo.copy(
+            checked = !todo.checked,
+            checkTime = LocalDateTime.now()
+        ))
     }
 
     fun addGroup(group: Group) {
-        var biggestUid = -1
-        _groups.value.map {
-            if (it.uid > biggestUid) {
-                biggestUid = it.uid
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            database.groupDao().insert(group)
         }
-        _groups.value = _groups.value.plus(
-            group.copy(uid = biggestUid + 1)
-        )
     }
 
-    fun deleteGroup(uid: Int) {
-        _groups.value = _groups.value.filter { it.uid != uid }
-        _todos.value = _todos.value.filter { it.groupUid != uid }
+    fun deleteEmptyGroup(group: Group) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val deletedLines = database.groupDao().deleteIfEmpty(group.uid)
+            if (deletedLines > 0 && selectedGroupUid.value == group.uid) {
+                setSelectedGroupUid(-1)
+            }
+        }
     }
 
     fun modifyGroup(modified: Group) {
-        _groups.value = _groups.value.map {
-            if (it.uid == modified.uid) {
-                modified
-            } else {
-                it
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            database.groupDao().update(modified)
         }
     }
 }

@@ -12,8 +12,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.caoyfcode.todo.R
-import com.github.caoyfcode.todo.entity.Group
-import com.github.caoyfcode.todo.entity.Todo
+import com.github.caoyfcode.todo.db.entity.Group
+import com.github.caoyfcode.todo.db.entity.Todo
 import com.github.caoyfcode.todo.viewmodel.TodoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,8 +84,8 @@ fun Screen(viewModel: TodoViewModel) {
                 paddingValues = paddingValues,
                 checkedTodos = checkedTodos,
                 uncheckedTodos = uncheckedTodos,
-                onToggleCheckedTodo = { uid ->
-                    viewModel.toggleCheckedTodo(uid)
+                onToggleCheckedTodo = { todo ->
+                    viewModel.toggleCheckedTodo(todo)
                 },
                 onEditTodo = {
                     viewModel.setTodoEditorMode(TodoEditorMode.Modify(todos.find { todo ->  todo.uid == it }!!))
@@ -135,7 +135,7 @@ fun Screen(viewModel: TodoViewModel) {
             groups = groups,
             onDismiss = { viewModel.setGroupsEditorShown(false) },
             onModifyGroup = { viewModel.modifyGroup(it) },
-            onDeleteGroup = { viewModel.deleteGroup(it) },
+            onDeleteGroup = { viewModel.deleteEmptyGroup(it) },
             onAddGroup = { viewModel.addGroup(it) },
         )
     }
@@ -187,8 +187,8 @@ fun Content(
     paddingValues: PaddingValues,
     checkedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
     uncheckedTodos: List<Pair<String, Todo>>, // group emoji, todo_item
-    onToggleCheckedTodo: (Int) -> Unit,
-    onDeleteTodo: (Int) -> Unit,
+    onToggleCheckedTodo: (todo: Todo) -> Unit,
+    onDeleteTodo: (todo: Todo) -> Unit,
     onEditTodo: (Int) -> Unit,
 ) {
     // 经观察, animateItemPlacement 的原理为重组时找到原来相同 key 的位置, 放置在此处，之后向目标移动
@@ -228,10 +228,10 @@ fun Content(
                         scaleIn = shouldScaleInIds.containsAndRemove(it.second.uid),
                         onToggleChecked = {
                             shouldScaleInIds.add(it.second.uid)
-                            onToggleCheckedTodo(it.second.uid)
+                            onToggleCheckedTodo(it.second)
                         },
                         onEditClicked = { onEditTodo(it.second.uid) },
-                        onDeleteClicked = { onDeleteTodo(it.second.uid) },
+                        onDeleteClicked = { onDeleteTodo(it.second) },
                     )
                 }
                 item(key = -1) {
@@ -247,10 +247,10 @@ fun Content(
                         scaleIn = shouldScaleInIds.containsAndRemove(it.second.uid),
                         onToggleChecked = {
                             shouldScaleInIds.add(it.second.uid)
-                            onToggleCheckedTodo(it.second.uid)
+                            onToggleCheckedTodo(it.second)
                         },
                         onEditClicked = { onEditTodo(it.second.uid) },
-                        onDeleteClicked = { onDeleteTodo(it.second.uid) },
+                        onDeleteClicked = { onDeleteTodo(it.second) },
                     )
                 }
             }
