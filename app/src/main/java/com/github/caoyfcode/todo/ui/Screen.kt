@@ -48,6 +48,12 @@ fun Screen(viewModel: TodoViewModel) {
             uncheckedTodos += Pair(groupIcon, todo)
         }
     }
+    uncheckedTodos.sortByDescending {
+        it.second.createTime
+    }
+    checkedTodos.sortByDescending {
+        it.second.checkTime
+    }
     Navigation(
         groups = navigationGroups,
         selectedGroup = selectedGroup,

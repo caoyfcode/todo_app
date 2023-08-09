@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.stateIn
 import com.github.caoyfcode.todo.entity.Group
 import com.github.caoyfcode.todo.entity.Todo
 import com.github.caoyfcode.todo.ui.TodoEditorMode
+import java.time.LocalDateTime
 
 class TodoViewModel: ViewModel() {
     // 所有的待办组
@@ -76,7 +77,10 @@ class TodoViewModel: ViewModel() {
     fun toggleCheckedTodo(uid: Int) {
         _todos.value = _todos.value.map {
             if (it.uid == uid) {
-                it.copy(checked = !it.checked)
+                it.copy(
+                    checked = !it.checked,
+                    checkTime = LocalDateTime.now()
+                )
             } else {
                 it
             }
