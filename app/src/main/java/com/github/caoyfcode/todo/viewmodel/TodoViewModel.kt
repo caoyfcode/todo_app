@@ -9,9 +9,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import com.github.caoyfcode.todo.entity.Group
 import com.github.caoyfcode.todo.entity.Todo
-import com.github.caoyfcode.todo.ui.EditorMode
+import com.github.caoyfcode.todo.ui.TodoEditorMode
 
 class TodoViewModel: ViewModel() {
+    // 所有的待办组
     private val _groups: MutableStateFlow<List<Group>> = MutableStateFlow(
         listOf(
             Group(0, "\uD83D\uDCBC", "工作"),
@@ -20,6 +21,9 @@ class TodoViewModel: ViewModel() {
             Group(3, "\uD83E\uDDFA", "杂务")
         )
     )
+    val groups: StateFlow<List<Group>>
+        get() = _groups
+    // 所有的待办
     private val _todos: MutableStateFlow<List<Todo>> = MutableStateFlow(
         listOf(
             Todo(0, 3, "打扫", "1.地板\n2.窗户"),
@@ -32,26 +36,41 @@ class TodoViewModel: ViewModel() {
             Todo(7, 1, "读书", "", true),
         )
     )
+    // 左侧导航栏中选中的组 id, 选择全部则为 -1
     private var _selectedGroupUid: MutableStateFlow<Int> = MutableStateFlow(-1)
-    private var _editorMode: MutableStateFlow<EditorMode?> = MutableStateFlow(null)
-    val groups: StateFlow<List<Group>>
-        get() = _groups
+    val selectedGroupUid: StateFlow<Int>
+        get() = _selectedGroupUid
+    // 主页面显示的待办列表
     val filteredTodos: StateFlow<List<Todo>> = combine(_todos, _selectedGroupUid) {
         all, selected ->
         all.filter { selected < 0 || it.groupUid == selected }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), listOf())
-    val selectedGroupUid: StateFlow<Int>
-        get() = _selectedGroupUid
-    val editorMode: StateFlow<EditorMode?>
-        get() = _editorMode
+    // 待办编辑对话框状态: 未打开(null), 添加, 修改
+    private var _todoEditorMode: MutableStateFlow<TodoEditorMode?> = MutableStateFlow(null)
+    val todoEditorMode: StateFlow<TodoEditorMode?>
+        get() = _todoEditorMode
+    // 添加待办时若无组则显示的警告对话框的打开与否
+    private var _groupsEmptyAlertShown: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val groupsEmptyAlertShown: StateFlow<Boolean> = _groupsEmptyAlertShown
+    // 组编辑对话框的打开与否
+    private var _groupsEditorShown: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val groupsEditorShown: StateFlow<Boolean> = _groupsEditorShown
 
     // < 0 代表选择全部
-    fun selectGroup(uid: Int) {
+    fun setSelectedGroupUid(uid: Int) {
         _selectedGroupUid.value = uid
     }
 
-    fun setEditorMode(mode: EditorMode?) {
-        _editorMode.value = mode
+    fun setTodoEditorMode(mode: TodoEditorMode?) {
+        _todoEditorMode.value = mode
+    }
+
+    fun setGroupsEmptyAlertShown(shown: Boolean) {
+        _groupsEmptyAlertShown.value = shown
+    }
+
+    fun setGroupsEditorShown(shown: Boolean) {
+        _groupsEditorShown.value = shown
     }
 
     fun toggleCheckedTodo(uid: Int) {

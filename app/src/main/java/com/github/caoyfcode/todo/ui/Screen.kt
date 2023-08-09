@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -23,14 +22,9 @@ fun Screen(viewModel: TodoViewModel) {
     val groups by viewModel.groups.collectAsState()
     val todos by viewModel.filteredTodos.collectAsState()
     val selectedGroup by viewModel.selectedGroupUid.collectAsState()
-    val editorMode by viewModel.editorMode.collectAsState()
-
-    var groupsEditorEnabled by rememberSaveable {
-        mutableStateOf(false)
-    }
-    var groupsEmptyAlertShown by rememberSaveable {
-        mutableStateOf(false)
-    }
+    val todoEditorMode by viewModel.todoEditorMode.collectAsState()
+    val groupsEmptyAlertShown by viewModel.groupsEmptyAlertShown.collectAsState()
+    val groupsEditorShown by viewModel.groupsEditorShown.collectAsState()
 
     val navigationGroups: List<Group> = listOf(
         Group(
@@ -58,10 +52,10 @@ fun Screen(viewModel: TodoViewModel) {
         groups = navigationGroups,
         selectedGroup = selectedGroup,
         onGroupSelected = { selected ->
-            viewModel.selectGroup(selected)
+            viewModel.setSelectedGroupUid(selected)
         },
         onGroupsEditorRequest = {
-            groupsEditorEnabled = true
+            viewModel.setGroupsEditorShown(true)
         }
     ) { openNavigation ->
         Scaffold(
@@ -72,9 +66,9 @@ fun Screen(viewModel: TodoViewModel) {
                     onNavigationClick = openNavigation,
                     onAddClick = {
                         if (groups.isEmpty()) {
-                            groupsEmptyAlertShown = true
+                            viewModel.setGroupsEmptyAlertShown(true)
                         } else {
-                            viewModel.setEditorMode(EditorMode.Add)
+                            viewModel.setTodoEditorMode(TodoEditorMode.Add)
                         }
                     }
                 )
@@ -88,7 +82,7 @@ fun Screen(viewModel: TodoViewModel) {
                     viewModel.toggleCheckedTodo(uid)
                 },
                 onEditTodo = {
-                    viewModel.setEditorMode(EditorMode.Modify(todos.find { todo ->  todo.uid == it }!!))
+                    viewModel.setTodoEditorMode(TodoEditorMode.Modify(todos.find { todo ->  todo.uid == it }!!))
                 },
                 onDeleteTodo = {
                     viewModel.deleteTodo(it)
@@ -97,7 +91,8 @@ fun Screen(viewModel: TodoViewModel) {
         }
     }
 
-    val mode = editorMode
+    // dialogs
+    val todoEditorDialogMode = todoEditorMode
     if (groupsEmptyAlertShown) {
         AlertDialog(
             onDismissRequest = {},
@@ -109,30 +104,30 @@ fun Screen(viewModel: TodoViewModel) {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    groupsEmptyAlertShown = false
-                    groupsEditorEnabled = true
+                    viewModel.setGroupsEmptyAlertShown(false)
+                    viewModel.setGroupsEditorShown(true)
                 }) {
                     Text(text = stringResource(id = R.string.confirm))
                 }
             }
         )
-    } else if (mode != null) {
+    } else if (todoEditorDialogMode != null) {
         TodoEditorDialog(
-            mode = mode,
+            mode = todoEditorDialogMode,
             groups = groups,
-            onDismiss = { viewModel.setEditorMode(null) },
+            onDismiss = { viewModel.setTodoEditorMode(null) },
             onConfirm = {
-                when (mode) {
-                    is EditorMode.Add -> viewModel.addTodo(it)
-                    is EditorMode.Modify -> viewModel.modifyTodo(it)
+                when (todoEditorDialogMode) {
+                    is TodoEditorMode.Add -> viewModel.addTodo(it)
+                    is TodoEditorMode.Modify -> viewModel.modifyTodo(it)
                 }
-                viewModel.setEditorMode(null)
+                viewModel.setTodoEditorMode(null)
             }
         )
-    } else if (groupsEditorEnabled) {
+    } else if (groupsEditorShown) {
         GroupsEditorDialog(
             groups = groups,
-            onDismiss = { groupsEditorEnabled = false },
+            onDismiss = { viewModel.setGroupsEditorShown(false) },
             onModifyGroup = { viewModel.modifyGroup(it) },
             onDeleteGroup = { viewModel.deleteGroup(it) },
             onAddGroup = { viewModel.addGroup(it) },
