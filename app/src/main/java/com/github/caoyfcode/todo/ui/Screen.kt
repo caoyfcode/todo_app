@@ -102,17 +102,17 @@ fun Screen(viewModel: TodoViewModel) {
         AlertDialog(
             onDismissRequest = {},
             title = {
-                Text(text = "无待办组")
+                Text(text = stringResource(id = R.string.warn_no_group_title))
             },
             text = {
-                Text(text = "添加待办至少需要一个待办组，请先添加一个组")
+                Text(text = stringResource(id = R.string.warn_no_group_text))
             },
             confirmButton = {
                 TextButton(onClick = {
                     groupsEmptyAlertShown = false
                     groupsEditorEnabled = true
                 }) {
-                    Text(text = "确定")
+                    Text(text = stringResource(id = R.string.confirm))
                 }
             }
         )
@@ -131,10 +131,11 @@ fun Screen(viewModel: TodoViewModel) {
         )
     } else if (groupsEditorEnabled) {
         GroupsEditorDialog(
-            groups = groups.filter { it.uid >= 0 },
+            groups = groups,
             onDismiss = { groupsEditorEnabled = false },
             onModifyGroup = { viewModel.modifyGroup(it) },
-            onDeleteGroup = { viewModel.deleteGroup(it) }
+            onDeleteGroup = { viewModel.deleteGroup(it) },
+            onAddGroup = { viewModel.addGroup(it) },
         )
     }
 }

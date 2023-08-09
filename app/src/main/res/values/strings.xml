@@ -24,4 +24,8 @@
     // 组编辑器对话框
     <string name="groups_editor_back">返回</string>
     <string name="groups_editor_title">修改待办组</string>
+    // 错误提示对话框
+    <string name="warn_no_group_title">无待办组</string>
+    <string name="warn_no_group_text">添加待办至少需要一个待办组，请先添加一个组</string>
+    <string name="confirm">确定</string>
 </resources>

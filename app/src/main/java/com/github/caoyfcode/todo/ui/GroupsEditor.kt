@@ -44,7 +44,8 @@ fun GroupsEditorDialog(
     groups: List<Group>,
     onDismiss: () -> Unit,
     onModifyGroup: (Group) -> Unit,
-    onDeleteGroup: (Int) -> Unit
+    onDeleteGroup: (Int) -> Unit,
+    onAddGroup: (Group) -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -69,7 +70,9 @@ fun GroupsEditorDialog(
                         Text(text = stringResource(id = R.string.groups_editor_title))
                     },
                     actions = {
-                        IconButton(onClick = { /*TODO*/ }) {
+                        IconButton(onClick = {
+                            onAddGroup(Group(uid = -1, icon = groupIcons[0], name = ""))
+                        }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.add),
                                 contentDescription = stringResource(id = R.string.add)
@@ -95,7 +98,7 @@ fun GroupsEditorDialog(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    items(groups) {
+                    items(groups, key = { it.uid }) {
                         GroupItem(
                             group = it,
                             onModify = onModifyGroup,
