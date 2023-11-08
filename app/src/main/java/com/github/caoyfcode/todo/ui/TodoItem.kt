@@ -14,8 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.github.caoyfcode.todo.R
+import kotlin.math.max
+import kotlin.math.min
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -34,33 +36,42 @@ fun TodoItem(
     subject: String,
     content: String,
     checked: Boolean,
-    scaleIn: Boolean = false,
-    onToggleChecked: () -> Unit,
-    onEditClicked: () -> Unit,
-    onDeleteClicked: () -> Unit,
+    onRightOrIconClick: () -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
 ) {
-    var reverseChecked by remember { mutableStateOf(false) } // 是否显示为另一种形态
-    val shownChecked = if (reverseChecked) !checked else checked
-    var shown by remember { mutableStateOf(!scaleIn) } // 是否可见
-    if (!shown) { // 若 scaleIn, 则初始不可见, 第一次组合之后变为可见
+    var visible by remember {
+        mutableStateOf(false)
+    }
+    var showingReversedChecked by remember {
+        mutableStateOf(false)
+    }
+    val showingChecked = if (showingReversedChecked) {
+        !checked
+    } else {
+        checked
+    }
+
+    if (!visible) { // 初始不可见后再可见
         LaunchedEffect(Unit) {
-            shown = true
+            visible = true
         }
     }
+    
     AnimatedVisibility(
-        visible = shown,
+        visible = visible,
         enter = scaleIn(),
-        modifier = modifier
+        modifier = modifier.fillMaxWidth()
     ) {
-        val contentColor = if (shownChecked) {
+        val contentColor = if (showingChecked) {
             MaterialTheme.colorScheme.secondary
         } else {
             MaterialTheme.colorScheme.onBackground
         }
-        SwipeLayout(
-            onRightThreshold = { reverseChecked = true },
-            onBelowRightThreshold = { reverseChecked = false },
-            onRight = onToggleChecked,
+        DragLayout(
+            onRight = onRightOrIconClick,
+            onBelowHalfRight = { showingReversedChecked = false},
+            onAboveHalfRight = { showingReversedChecked = true },
             background =  { modifier ->
                 Surface(
                     modifier = modifier,
@@ -70,15 +81,15 @@ fun TodoItem(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (!shownChecked) {
-                            IconButton(onClick = onEditClicked) {
+                        if (!showingChecked) {
+                            IconButton(onClick = onEditClick) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.edit),
                                     contentDescription = stringResource(id = R.string.edit)
                                 )
                             }
                         }
-                        IconButton(onClick = onDeleteClicked) {
+                        IconButton(onClick = onDeleteClick) {
                             Icon(
                                 painter = painterResource(id = R.drawable.delete),
                                 contentDescription = stringResource(id = R.string.delete)
@@ -89,9 +100,7 @@ fun TodoItem(
             }
         ) { modifier ->
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(modifier),
+                modifier = modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20),
                 border = BorderStroke(2.dp, contentColor),
                 color = MaterialTheme.colorScheme.background,
@@ -101,148 +110,95 @@ fun TodoItem(
                     emoji = emoji,
                     subject = subject,
                     content = content,
-                    checked = shownChecked,
-                    onToggleChecked = onToggleChecked,
+                    checked = showingChecked,
+                    onIconClick = onRightOrIconClick,
                 )
             }
         }
     }
 }
 
-enum class DragState {
-    Left,
-    Right,
-    None
-}
-
 /**
- * 一个可以左右滑动的 layout, 有两个槽, 左滑移动内容(前景), 右滑移动整体.
- * - 向右拖动时, 当拖动到右阈值时松手或者松手后速度够大, 将移出屏幕, 否则回到原点
- * - 向左拖动时, 拖动到背景大小时松手将停在此处, 否则回到原点
- * 当拖动经过阈值时, 将调用 `onRightThreshold` 与 `onBelowRightThreshold`
+ * 一个带有前景与背景两层的 layout
+ * - 向左拖动时, 前景一起移动, 拖动到背景大小时松手将停在此处, 否则回到原点
+ * - 向右拖动时, 前景背景一起移动, 若拖动超过一半后松手, 将移动到右侧, 并调用 onRight, 否则回到原点
  *
- * @param onRightThreshold 整体移动时, 向右经过右阈值调用
- * @param onBelowRightThreshold 整体移动时, 向左经过右阈值调用
- * @param onRight 向右移出屏幕后调用
+ * @param onRight 移动到右侧之后调用
+ * @param onBelowHalfRight 当从右侧一半的右侧至左侧调用
+ * @param onAboveHalfRight 当从右侧一半的左侧至右侧调用
  * @param background 背景, 左移后看到
  * @param content 内容(前景)
  */
 @Composable
-fun SwipeLayout(
-    onRightThreshold: () -> Unit,
-    onBelowRightThreshold: () -> Unit,
-    onRight: () -> Unit,
+fun DragLayout(
+    onRight: () -> Unit = {},
+    onBelowHalfRight: () -> Unit = {},
+    onAboveHalfRight: () -> Unit = {},
     background: @Composable ((Modifier) -> Unit),
     content: @Composable ((Modifier) -> Unit),
 ) {
     val scope = rememberCoroutineScope()
-    val offsetX = remember { Animatable(0f) } // 当前整体偏移量
-    val contentOffsetX = remember { Animatable(0f) } // 当前内容偏移量
-
-    var dragState = remember { DragState.None } // 当前在左边、右边还是没动
-
-    var width by remember { mutableStateOf(0f) } // 储存组件宽度(可交互宽度)
+    val offset = remember { Animatable(0f) } // 当前内容偏移量
     var backgroundWidth by remember { mutableStateOf(0f) } // 储存背景组件宽度(可交互宽度)
+    var allWidth by remember { mutableStateOf(0f) }
 
-    val rightThreshold = 0.4f * width // 滑动到此认为需要调用 onRight
-    val rightUpperbound = 1.5f * width // 右滑边界
     val draggableState = rememberDraggableState {
         scope.launch {
-            if (dragState == DragState.None) {
-                if (it > 0f) {
-                    dragState = DragState.Right
-                }
-                if (it < 0f) {
-                    dragState = DragState.Left
-                }
-            }
-            when (dragState) {
-                DragState.Right -> {
-                    val targetOffsetX = offsetX.value + it
-                    val beforeOffsetX = offsetX.value
-                    offsetX.snapTo(targetOffsetX)
-                    contentOffsetX.snapTo(0f)
-                    val afterOffsetX = offsetX.value
-                    if (beforeOffsetX < rightThreshold && afterOffsetX >= rightThreshold) {
-                        onRightThreshold()
-                    } else if (afterOffsetX < rightThreshold && beforeOffsetX >= rightThreshold) {
-                        onBelowRightThreshold()
-                    }
-                    if (offsetX.value == 0f) {
-                        dragState = if (targetOffsetX < 0f) {
-                            DragState.Left
-                        } else {
-                            DragState.None
-                        }
-                    }
-                }
-                DragState.Left -> {
-                    val targetContentOffsetX = contentOffsetX.value + it
-                    offsetX.snapTo(0f)
-                    contentOffsetX.snapTo(targetContentOffsetX)
-                    if (contentOffsetX.value == 0f) {
-                        dragState = if (targetContentOffsetX > 0f) {
-                            DragState.Right
-                        } else {
-                            DragState.None
-                        }
-                    }
-                }
-                else -> {}
+            val prevOffset = offset.value
+            offset.snapTo(offset.value + it)
+            val curOffset = offset.value
+            if (prevOffset < 0.5 * allWidth && curOffset >= 0.5 * allWidth) {
+                onAboveHalfRight()
+            } else if (prevOffset >= 0.5 * allWidth && curOffset < 0.5 * allWidth) {
+                onBelowHalfRight()
             }
         }
     }
 
     Box(
-        modifier = Modifier.offset {
-            IntOffset(offsetX.value.roundToInt(), 0)
-        },
-        contentAlignment = Alignment.CenterEnd
+        contentAlignment = Alignment.CenterEnd,
+        modifier = Modifier
+            .offset {
+                IntOffset(
+                    max(offset.value.roundToInt(), 0),
+                    0
+                )
+            }
+            .onSizeChanged {
+                allWidth = it.width.toFloat()
+                offset.updateBounds(upperBound = 1.5f * allWidth)
+            }
     ) {
         background(
-            Modifier.pointerInput(Unit) {
-                backgroundWidth = size.width.toFloat()
-                contentOffsetX.updateBounds(
-                    lowerBound = -backgroundWidth,
-                    upperBound = 0f
-                )
+            Modifier.onSizeChanged {
+                backgroundWidth = it.width.toFloat()
+                offset.updateBounds(lowerBound = -backgroundWidth)
             }
         )
         content(
             Modifier
                 .offset {
-                    IntOffset(contentOffsetX.value.roundToInt(), 0)
-                }
-                .pointerInput(Unit) {
-                    width = size.width.toFloat()
-                    offsetX.updateBounds(
-                        lowerBound = 0f,
-                        upperBound = 1.5f * width
+                    IntOffset(
+                        min(offset.value.roundToInt(), 0),
+                        0
                     )
                 }
                 .draggable(
                     state = draggableState,
                     orientation = Orientation.Horizontal,
                     onDragStopped = { velocity ->
-                        if (dragState == DragState.Left
-                            && contentOffsetX.value <= -backgroundWidth) {
-                            contentOffsetX.animateTo(
+                        if (offset.value <= -backgroundWidth) {
+                            offset.animateTo(
                                 -backgroundWidth
                             )
-                        } else {
-                            contentOffsetX.animateTo(0f, initialVelocity = velocity)
-                        }
-                        // 经过打印发现 width 在 900 多, velocity 轻轻的时为一两千, 稍微不轻就接近万了
-                        if (dragState == DragState.Right
-                            && (velocity >= 2000f
-                                    || offsetX.value >= rightThreshold)
-                        ) {
-                            onRightThreshold()
-                            offsetX.animateTo(rightUpperbound, initialVelocity = velocity)
+                        } else if (offset.value >= 0.5 * allWidth) {
+                            offset.animateTo(
+                                1.5f * allWidth,
+                                initialVelocity = velocity
+                            )
                             onRight()
                         } else {
-                            onBelowRightThreshold()
-                            offsetX.animateTo(0f, initialVelocity = velocity)
+                            offset.animateTo(0f, initialVelocity = velocity)
                         }
                     }
                 )
@@ -256,13 +212,13 @@ fun TodoItemContent(
     subject: String,
     content: String,
     checked: Boolean,
-    onToggleChecked: () -> Unit,
+    onIconClick: () -> Unit,
 ) {
     var folding by remember { mutableStateOf(true) } // 是否收起内容
     TodoItemContentLayout(
         folding = folding || content.isEmpty(),
         icon = {
-            IconButton(onClick = onToggleChecked) {
+            IconButton(onClick = onIconClick) {
                 if (!checked) {
                     Text(text = emoji)
                 } else {
@@ -369,10 +325,9 @@ fun ItemPreview() {
             subject = "subject",
             content = "content content",
             checked = checked,
-            scaleIn = false,
-            onToggleChecked = { checked = ! checked },
-            onEditClicked = {},
-            onDeleteClicked = {},
+            onRightOrIconClick = { checked = ! checked },
+            onEditClick = {},
+            onDeleteClick = {},
         )
     }
 }
@@ -398,7 +353,7 @@ fun TestBox() {
                 subject = "sub",
                 content = "content",
                 checked = false,
-                onToggleChecked = {},
+                onIconClick = {},
             )
         }
     }

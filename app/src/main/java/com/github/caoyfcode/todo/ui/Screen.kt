@@ -15,6 +15,7 @@ import com.github.caoyfcode.todo.R
 import com.github.caoyfcode.todo.db.entity.Group
 import com.github.caoyfcode.todo.db.entity.Todo
 import com.github.caoyfcode.todo.viewmodel.TodoViewModel
+import java.io.Serializable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,6 +176,8 @@ fun TopBar(
     )
 }
 
+data class TodoItemsKey(val uid: Int, val checked: Boolean): Serializable
+
 /**
  * 主要内容
  * @param paddingValues 由 Scaffold 获得
@@ -191,11 +194,6 @@ fun Content(
     onDeleteTodo: (todo: Todo) -> Unit,
     onEditTodo: (Int) -> Unit,
 ) {
-    // 经观察, animateItemPlacement 的原理为重组时找到原来相同 key 的位置, 放置在此处，之后向目标移动
-    // 因而，可以仅让 toggle 后的 item 进行 scale in (淡入), 其余不 scale in
-    val shouldScaleInIds = remember {
-        mutableSetOf<Int>()
-    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -218,48 +216,34 @@ fun Content(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp), // 没项相隔 20dp
             ) {
-                items(uncheckedTodos, key = { it.second.uid }) {
+                items(uncheckedTodos, key = { TodoItemsKey(it.second.uid, it.second.checked) }) {
                     TodoItem(
                         modifier = Modifier.animateItemPlacement(),
                         emoji = it.first,
                         subject = it.second.subject,
                         content = it.second.content,
                         checked = false,
-                        scaleIn = shouldScaleInIds.containsAndRemove(it.second.uid),
-                        onToggleChecked = {
-                            shouldScaleInIds.add(it.second.uid)
-                            onToggleCheckedTodo(it.second)
-                        },
-                        onEditClicked = { onEditTodo(it.second.uid) },
-                        onDeleteClicked = { onDeleteTodo(it.second) },
+                        onRightOrIconClick = { onToggleCheckedTodo(it.second) },
+                        onEditClick = { onEditTodo(it.second.uid) },
+                        onDeleteClick = { onDeleteTodo(it.second) },
                     )
                 }
                 item(key = -1) {
                     Divider(color = MaterialTheme.colorScheme.secondary, modifier = Modifier.animateItemPlacement())
                 }
-                items(checkedTodos, key = { it.second.uid }) {
+                items(checkedTodos, key = { TodoItemsKey(it.second.uid, it.second.checked) }) {
                     TodoItem(
                         modifier = Modifier.animateItemPlacement(),
                         emoji = it.first,
                         subject = it.second.subject,
                         content = it.second.content,
                         checked = true,
-                        scaleIn = shouldScaleInIds.containsAndRemove(it.second.uid),
-                        onToggleChecked = {
-                            shouldScaleInIds.add(it.second.uid)
-                            onToggleCheckedTodo(it.second)
-                        },
-                        onEditClicked = { onEditTodo(it.second.uid) },
-                        onDeleteClicked = { onDeleteTodo(it.second) },
+                        onRightOrIconClick = { onToggleCheckedTodo(it.second) },
+                        onEditClick = { onEditTodo(it.second.uid) },
+                        onDeleteClick = { onDeleteTodo(it.second) },
                     )
                 }
             }
         }
     }
-}
-
-fun <T> MutableSet<T>.containsAndRemove(element: T): Boolean {
-    val contains = this.contains(element)
-    this.remove(element)
-    return contains
 }
